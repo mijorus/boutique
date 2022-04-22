@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=boutique
+Exec=boutique
+Icon=it.mijorus.boutique
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true

@@ -1,0 +1,5 @@
+
+.flatpak-builder
+build
+builddir
+run.sh
