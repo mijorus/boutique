@@ -9,7 +9,8 @@ def sh(command: str) -> str:
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     try:
-        output = subprocess.run([f'flatpak-spawn --host {command}'], encoding='utf-8', shell=True, check=True, capture_output=True)
+        cmd = f'flatpak-spawn --host {command}'.split(' ')
+        output = subprocess.run(cmd, encoding='utf-8', shell=False, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         print(e.stderr)
         raise Exception(e.stderr) from e

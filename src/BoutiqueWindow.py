@@ -15,18 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from .InstalledAppsList import InstalledAppsList
 from .lib import flatpak
+
 from gi.repository import Gtk
 
 
-@Gtk.Template(resource_path='/it/mijorus/boutique/window.ui')
 class BoutiqueWindow(Gtk.ApplicationWindow):
-    __gtype_name__ = 'BoutiqueWindow'
+    # __gtype_name__ = 'BoutiqueWindow'
 
-    label = Gtk.Template.Child()
+    # label = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        _list = flatpak.f_list()
-        print(_list[0])
+        self.set_default_size(400, 600)
+
+        apps_list = InstalledAppsList()
+        self.set_child(apps_list)
+
 

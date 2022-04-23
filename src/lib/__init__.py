@@ -1,1 +1,4 @@
-__all__ = ['flatpak']
+__all__ = [
+    'flatpak',
+    'terminal'
+]
