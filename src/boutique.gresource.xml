@@ -3,5 +3,6 @@
   <gresource prefix="/it/mijorus/boutique">
     <file>window.ui</file>
     <file>gtk/help-overlay.ui</file>
+    <file>assets/flathub-badge-logo.svg</file>
   </gresource>
 </gresources>

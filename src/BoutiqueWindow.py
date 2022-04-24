@@ -28,6 +28,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.set_title('Boutique')
         self.set_default_size(400, 600)
 
         apps_list = InstalledAppsList()

@@ -1,18 +1,12 @@
 from ..lib import flatpak
 from ..models.InstalledAppListElement import InstalledAppListElement
+from ..models.Provider import Provider
 from typing import List
 
-class FlatpakProvider():
+class FlatpakProvider(Provider):
     def __init__(self):
         pass
 
     def list_installed(self) -> List[InstalledAppListElement]:
-        app_list = flatpak.list_()
-
-        list_installed = []
-        for app in app_list:
-            list_installed.append(InstalledAppListElement(app['name'], app['description']))
-
-        print(list_installed)
-
-        return list_installed
+        output = [InstalledAppListElement(app['name'], app['description']) for app in flatpak.apps_list()]
+        return output
