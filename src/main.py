@@ -19,13 +19,14 @@ import sys
 import gi
 
 gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, Adw, Gdk
 from .BoutiqueWindow import BoutiqueWindow
 from .AboutDialog import AboutDialog
 
 
-class BoutiqueApplication(Gtk.Application):
+class BoutiqueApplication(Adw.Application):
     """The main application singleton class."""
 
     def __init__(self):
@@ -34,6 +35,13 @@ class BoutiqueApplication(Gtk.Application):
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
         self.create_action('preferences', self.on_preferences_action)
+
+    def do_startup(self):
+        Adw.Application.do_startup(self)
+
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_resource('/it/mijorus/boutique/assets/style.css')
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def do_activate(self):
         """Called when the application is activated.

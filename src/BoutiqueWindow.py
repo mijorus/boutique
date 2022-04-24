@@ -22,16 +22,24 @@ from gi.repository import Gtk
 
 
 class BoutiqueWindow(Gtk.ApplicationWindow):
-    # __gtype_name__ = 'BoutiqueWindow'
-
-    # label = Gtk.Template.Child()
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.titlebar = Gtk.HeaderBar()
+        self.set_titlebar(self.titlebar)
+
+
         self.set_title('Boutique')
         self.set_default_size(400, 600)
 
-        apps_list = InstalledAppsList()
-        self.set_child(apps_list)
+        # Create the "stack" widget we will be using in the Window
+        self.stack = Gtk.Stack()
+
+        self.installed_apps_list = InstalledAppsList()
+        self.stack.add_child(self.installed_apps_list)
+
+        self.set_child(self.stack)
+        self.stack.set_visible_child(self.installed_apps_list)
+        
 
 
