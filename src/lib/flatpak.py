@@ -19,6 +19,7 @@ def _parse_output(command_output: str, headers: List[str]):
 
         output.append(app_details)
 
+    output = sorted(output, key=lambda o: o['name'].lower())
     return output
 
 def full_list() -> List:
