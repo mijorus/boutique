@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .InstalledAppsList import InstalledAppsList
+from .AppDetails import AppDetails
+from .models.AppListElement import AppListElement
 from .lib import flatpak
 
 from gi.repository import Gtk
@@ -33,13 +35,19 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.set_default_size(400, 600)
 
         # Create the "stack" widget we will be using in the Window
-        self.stack = Gtk.Stack()
+        self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT)
 
         self.installed_apps_list = InstalledAppsList()
         self.stack.add_child(self.installed_apps_list)
 
+        self.app_details = AppDetails()
+        self.stack.add_child(self.app_details)
+
         self.set_child(self.stack)
         self.stack.set_visible_child(self.installed_apps_list)
         
+        self.installed_apps_list.connect('selected-app', self.on_selected_app)
 
-
+    def on_selected_app(self, source, list_element: AppListElement):
+        self.app_details.set_app_list_element(list_element)
+        self.stack.set_visible_child(self.app_details)
