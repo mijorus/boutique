@@ -1,4 +1,5 @@
 import subprocess
+import re
 
 def _command_is_allowed(command: str) -> bool:
     allowed = ['flatpak']
@@ -15,4 +16,4 @@ def sh(command: str) -> str:
         print(e.stderr)
         raise Exception(e.stderr) from e
 
-    return output.stdout
+    return re.sub(r'\n$', '', output.stdout)

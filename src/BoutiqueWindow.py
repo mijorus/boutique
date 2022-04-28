@@ -32,10 +32,10 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
 
         self.set_title('Boutique')
-        self.set_default_size(400, 600)
+        self.set_default_size(600, 700)
 
         # Create the "stack" widget we will be using in the Window
-        self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT)
+        self.stack = Gtk.Stack()
 
         self.installed_apps_list = InstalledAppsList()
         self.stack.add_child(self.installed_apps_list)
@@ -47,7 +47,14 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.stack.set_visible_child(self.installed_apps_list)
         
         self.installed_apps_list.connect('selected-app', self.on_selected_app)
+        self.app_details.connect('show_list', self.on_show_list)
 
     def on_selected_app(self, source, list_element: AppListElement):
         self.app_details.set_app_list_element(list_element)
+
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.stack.set_visible_child(self.app_details)
+
+    def on_show_list(self, source, _):
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
+        self.stack.set_visible_child(self.installed_apps_list)
