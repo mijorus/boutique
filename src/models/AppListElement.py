@@ -1,11 +1,12 @@
 from typing import Optional, Dict
 
 class AppListElement():
-    def __init__(self, name: str, description: str, app_id: str, provider: str, **kwargs):
+    def __init__(self, name: str, description: str, app_id: str, provider: str, installed: bool, **kwargs):
         self.name: str = name
         self.description: str = description
         self.id = app_id
         self.provider: str = provider
+        self.installed: bool = installed
 
         self.extra_data: Dict[str, str] = {}
         for k, v in kwargs.items():

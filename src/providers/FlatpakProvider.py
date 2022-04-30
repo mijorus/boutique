@@ -13,7 +13,7 @@ class FlatpakProvider(Provider):
 
         for app in flatpak.apps_list():
             output.append(
-                AppListElement(app['name'], app['description'], app['application'], 'flatpak', ref=app['ref'])
+                AppListElement(app['name'], app['description'], app['application'], 'flatpak', True, ref=app['ref'])
             )
 
         return output
