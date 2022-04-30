@@ -60,12 +60,13 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         """Show app details"""
 
         self.app_details.set_app_list_element(list_element)
-
+        self.left_button.set_visible(True)
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.stack.set_visible_child(self.app_details)
 
     def on_show_list(self, source: Gtk.Widget=None, _=None):
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
+        self.left_button.set_visible(False)
 
         self.installed_apps_list.refresh_list()
         self.stack.set_visible_child(self.installed_apps_list)
