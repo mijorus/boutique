@@ -44,7 +44,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
         self.title.set_label(el.name)
         self.primary_action_button.set_label('Uninstall')
-        self.primary_action_button.set_css_classes(['.destructive-action'])
+        self.primary_action_button.set_css_classes(['destructive-action'])
 
     def on_primary_action_button_cliecked(self, button: Gtk.Button):
         pass

@@ -28,6 +28,10 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         super().__init__(**kwargs)
 
         self.titlebar = Gtk.HeaderBar()
+        self.left_button = Gtk.Button(icon_name='go-previous')
+
+        self.titlebar.pack_start(self.left_button)
+
         self.set_titlebar(self.titlebar)
 
 
@@ -48,13 +52,21 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         
         self.installed_apps_list.connect('selected-app', self.on_selected_app)
         self.app_details.connect('show_list', self.on_show_list)
+        self.left_button.connect('clicked', self.on_left_button_clicked)
 
-    def on_selected_app(self, source, list_element: AppListElement):
+    def on_selected_app(self, source: Gtk.Widget, list_element: AppListElement):
+        """Show app details"""
+
         self.app_details.set_app_list_element(list_element)
 
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.stack.set_visible_child(self.app_details)
 
-    def on_show_list(self, source, _):
+    def on_show_list(self, source: Gtk.Widget=None, _=None):
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
         self.stack.set_visible_child(self.installed_apps_list)
+
+    def on_left_button_clicked(self, widget):
+        if self.stack.get_visible_child() == self.app_details:
+            self.on_show_list()
+

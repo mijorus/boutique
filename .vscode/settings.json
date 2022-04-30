@@ -1,5 +1,10 @@
 {
     "python.linting.pylintEnabled": false,
     "python.linting.mypyEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "VsCodeTaskButtons.tasks": {
+        "label": "Label",
+        "task": "prova",
+        "tooltip": "Optional tooltip to show when hovering over the button (defaults to task name)",
+    }
 }
