@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Callable
 from .AppListElement import AppListElement
 from gi.repository import Gtk
 
@@ -14,7 +14,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    async def uninstall(self, AppListElement) -> bool:
+    def uninstall(self, AppListElementc, c: Callable[[bool], None]):
         pass
     
     def install(self, AppListElement) -> bool:

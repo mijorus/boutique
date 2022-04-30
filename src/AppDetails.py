@@ -3,7 +3,6 @@ import asyncio
 from gi.repository import Gtk, GObject
 from .models.AppListElement import AppListElement, InstalledStatus
 from .providers import FlatpakProvider
-from .lib.terminal import async_sh
 from .providers.providers_list import providers
 
 class AppDetails(Gtk.ScrolledWindow):
@@ -53,18 +52,16 @@ class AppDetails(Gtk.ScrolledWindow):
             self.app_list_element.set_installed_status(InstalledStatus.UNINSTALLING)
             self.update_installation_status()
 
-            # await providers[self.app_list_element.provider].uninstall(self.app_list_element)
-            # asyncio.run( )
-            async_sh(
-                f'flatpak remove com.bitstower.Markets/x86_64/stable --user -y --no-related',
-                lambda output: self.update_installation_status()
+            providers[self.app_list_element.provider].uninstall(
+                self.app_list_element, 
+                lambda result: self.update_installation_status()
             )
 
         elif self.app_list_element.installed_status == InstalledStatus.UNINSTALLING:
             pass
 
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
-            providers[self.app_list_element.provider].install(self.app_list_element)
+            self.provider.install(self.app_list_element)
             self.update_installation_status()
 
     def update_installation_status(self):

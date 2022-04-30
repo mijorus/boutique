@@ -1,7 +1,7 @@
 from ..lib import flatpak
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
-from typing import List
+from typing import List, Callable
 from gi.repository import GLib, Gtk
 
 class FlatpakProvider(Provider):
@@ -40,15 +40,27 @@ class FlatpakProvider(Provider):
 
         return image
 
-    async def uninstall(self, list_element: AppListElement) -> bool:
+    def uninstall(self, list_element: AppListElement, callback: Callable[[bool], None]=None):
         success = False
 
-        try:
-            await flatpak.remove(list_element.extra_data['ref'], list_element.id)
+        def after_uninstall(_: bool):
             list_element.set_installed_status(InstalledStatus.NOT_INSTALLED)
+            
+            if callback:
+                callback(_)
+
+        try:
+            flatpak.remove(
+                list_element.extra_data['ref'], 
+                list_element.id, 
+                lambda _: after_uninstall(True)
+            )
+            
             success = True
         except Exception as e:
             print(e)
+            after_uninstall(False)
+            list_element.set_installed_status(InstalledStatus.ERROR)
 
         return success
 

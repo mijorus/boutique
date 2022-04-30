@@ -5,6 +5,7 @@ class InstalledStatus(Enum):
     INSTALLED = 1
     NOT_INSTALLED = 2
     UNINSTALLING = 3
+    ERROR = 4
 
 class AppListElement():
     def __init__(self, name: str, description: str, app_id: str, provider: str, installed_status: InstalledStatus, **kwargs):
