@@ -1,14 +1,22 @@
 from typing import Optional, Dict
+from enum import Enum
+
+class InstalledStatus(Enum):
+    INSTALLED = 1
+    NOT_INSTALLED = 2
+    UNINSTALLING = 3
 
 class AppListElement():
-    def __init__(self, name: str, description: str, app_id: str, provider: str, installed: bool, **kwargs):
+    def __init__(self, name: str, description: str, app_id: str, provider: str, installed_status: InstalledStatus, **kwargs):
         self.name: str = name
         self.description: str = description
         self.id = app_id
         self.provider: str = provider
-        self.installed: bool = installed
+        self.installed_status: InstalledStatus = installed_status
 
         self.extra_data: Dict[str, str] = {}
         for k, v in kwargs.items():
             self.extra_data[k] = v
 
+    def set_installed_status(self, installed_status: InstalledStatus):
+        self.installed_status = installed_status

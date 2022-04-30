@@ -14,5 +14,8 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def uninstall(self, AppListElement) -> bool:
+    async def uninstall(self, AppListElement) -> bool:
+        pass
+    
+    def install(self, AppListElement) -> bool:
         pass

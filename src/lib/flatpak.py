@@ -1,5 +1,5 @@
 from typing import List
-from .terminal import sh
+from .terminal import sh, async_sh
 from ..models.AppsListSection import AppsListSection
 from .utils import key_in_dict
 
@@ -54,12 +54,15 @@ def get_default_aarch() -> str:
 def get_ref_origin(ref: str) -> str:
     return sh(f'flatpak info {ref} -o')
 
-def remove(ref: str, kill_id: str=None):
+async def remove(ref: str, kill_id: str=None):
     if kill_id:
         try:
             sh(f'flatpak kill {kill_id}')
         except Exception as e:
-            print(e)
+            pass
 
-    sh(f'flatpak remove {ref} --user -y --no-related')
+    await async_sh(f'flatpak remove {ref} --user -y --no-related')
+    return
     
+def install(repo: str, app_id: str):
+    sh(f'flatpak install --user -y {repo} {app_id}')

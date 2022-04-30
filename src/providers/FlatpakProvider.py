@@ -1,5 +1,5 @@
 from ..lib import flatpak
-from ..models.AppListElement import AppListElement
+from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from typing import List
 from gi.repository import GLib, Gtk
@@ -13,7 +13,16 @@ class FlatpakProvider(Provider):
 
         for app in flatpak.apps_list():
             output.append(
-                AppListElement(app['name'], app['description'], app['application'], 'flatpak', True, ref=app['ref'])
+                AppListElement(
+                    app['name'], 
+                    app['description'], 
+                    app['application'], 
+                    'flatpak', 
+                    InstalledStatus.INSTALLED,
+
+                    ref=app['ref'], 
+                    origin=app['origin']
+                )
             )
 
         return output
@@ -31,13 +40,26 @@ class FlatpakProvider(Provider):
 
         return image
 
-    def uninstall(self, list_element: AppListElement):
+    async def uninstall(self, list_element: AppListElement) -> bool:
         success = False
 
         try:
-            flatpak.remove(list_element.extra_data['ref'], list_element.id)
+            await flatpak.remove(list_element.extra_data['ref'], list_element.id)
+            list_element.set_installed_status(InstalledStatus.NOT_INSTALLED)
             success = True
         except Exception as e:
             print(e)
 
+        return success
+
+    def install(self, list_element: AppListElement) -> bool:
+        success = False
+
+        try:
+            flatpak.install(list_element.extra_data['origin'], list_element.id)
+            list_element.set_installed_status(InstalledStatus.INSTALLED)
+            success = True
+        except Exception as e:
+            print(e)
+        
         return success
