@@ -23,7 +23,7 @@ def _parse_output(command_output: str, headers: List[str]):
     return output
 
 def full_list() -> List:
-    output_list: str = sh(f'flatpak list --columns={",".join(_columns_query)}')
+    output_list: str = sh(f'flatpak list --user --columns={",".join(_columns_query)}')
 
     output: List = _parse_output(output_list, _columns_query)
     return output
@@ -53,3 +53,13 @@ def get_default_aarch() -> str:
 
 def get_ref_origin(ref: str) -> str:
     return sh(f'flatpak info {ref} -o')
+
+def remove(ref: str, kill_id: str=None):
+    if kill_id:
+        try:
+            sh(f'flatpak kill {kill_id}')
+        except Exception as e:
+            print(e)
+
+    sh(f'flatpak remove {ref} --user -y --no-related')
+    

@@ -30,3 +30,14 @@ class FlatpakProvider(Provider):
             image = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
 
         return image
+
+    def uninstall(self, list_element: AppListElement):
+        success = False
+
+        try:
+            flatpak.remove(list_element.extra_data['ref'], list_element.id)
+            success = True
+        except Exception as e:
+            print(e)
+
+        return success

@@ -12,3 +12,7 @@ class Provider(ABC):
     @abstractmethod
     def get_icon(self, AppListElement) -> Gtk.Image:
         pass
+
+    @abstractmethod
+    def uninstall(self, AppListElement) -> bool:
+        pass
