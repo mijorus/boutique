@@ -16,12 +16,30 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.installed_apps_list = Gtk.ListBox(css_classes=["boxed-list"])
+
+        self.installed_apps_list_slot = Gtk.Box()
+        
+        self.installed_apps_list: Gtk.ListBox = None
+
+        self.refresh_list()
 
         title_row = Gtk.Box(margin_bottom=5)
         title_row.append( Gtk.Label(label='Installed applications', css_classes=['title-2']) )
         
         self.main_box.append(title_row)
+        self.main_box.append(self.installed_apps_list_slot)
+
+        clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
+        self.set_child(clamp)
+
+    def on_activated_row(self, listbox, row: Gtk.ListBoxRow):
+        self.emit('selected-app', row._app)
+
+    def refresh_list(self):
+        if self.installed_apps_list:
+            self.installed_apps_list_slot.remove(self.installed_apps_list)
+
+        self.installed_apps_list= Gtk.ListBox(css_classes=["boxed-list"])
 
         for p, provider in providers.items():
             installed: List[AppListElement] = provider.list_installed()
@@ -45,14 +63,5 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
                 self.installed_apps_list.append(list_row)
 
-        self.main_box.append(self.installed_apps_list)
+        self.installed_apps_list_slot.append(self.installed_apps_list)
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
-
-        clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
-        self.set_child(clamp)
-
-    def on_activated_row(self, listbox, row: Gtk.ListBoxRow):
-        self.emit('selected-app', row._app)
-
-
-

@@ -66,6 +66,8 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
     def on_show_list(self, source: Gtk.Widget=None, _=None):
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
+
+        self.installed_apps_list.refresh_list()
         self.stack.set_visible_child(self.installed_apps_list)
 
     def on_left_button_clicked(self, widget):
