@@ -3,6 +3,7 @@ import re
 import asyncio
 import threading
 from typing import Callable
+from .utils import log
 
 def _command_is_allowed(command: str) -> bool:
     allowed = ['flatpak']
@@ -13,6 +14,7 @@ def sh(command: str) -> str:
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     try:
+        log(f'Running {command}')
         cmd = f'flatpak-spawn --host {command}'.split(' ')
         output = subprocess.run(cmd, encoding='utf-8', shell=False, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
@@ -28,7 +30,7 @@ def threaded_sh(command: str, callback: Callable[[str], None]=None):
     
     def run_command():
         try:
-            print(f'Running {command}')
+            log(f'Running {command}')
 
             cmd = f'flatpak-spawn --host {command}'.split(' ')
             output = subprocess.run(cmd, encoding='utf-8', shell=False, check=True, capture_output=True)
@@ -37,7 +39,7 @@ def threaded_sh(command: str, callback: Callable[[str], None]=None):
                 callback(re.sub(r'\n$', '', output.stdout))
 
         except subprocess.CalledProcessError as e:
-            print(e.stderr)
+            log(e.stderr)
             raise Exception(e.stderr) from e
 
     

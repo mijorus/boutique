@@ -53,7 +53,6 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.installed_apps_list.connect('selected-app', self.on_selected_app)
         
         self.app_details.connect('show_list', self.on_show_list)
-        self.app_details.connect('show_list', self.on_show_list)
 
         self.left_button.connect('clicked', self.on_left_button_clicked)
 

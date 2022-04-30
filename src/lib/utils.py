@@ -1,3 +1,5 @@
+import os
+
 def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     """
         Searches for a nested key in a dictionary and returns its value, or None if nothing was found.
@@ -11,3 +13,7 @@ def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
         if subdict is None: break
 
     return subdict
+
+def log(s: str):
+    if os.getenv('DEBUG_MODE', None) == 'dev':
+        print(s)

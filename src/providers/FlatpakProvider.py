@@ -21,15 +21,16 @@ class FlatpakProvider(Provider):
                     InstalledStatus.INSTALLED,
 
                     ref=app['ref'], 
-                    origin=app['origin']
+                    origin=app['origin'],
+                    arch=app['arch'],
                 )
             )
 
         return output
 
     def get_icon(self, list_element: AppListElement, repo='flathub'):
-        repo = flatpak.get_ref_origin(list_element.extra_data['ref'])
-        aarch = flatpak.get_default_aarch()
+        repo = list_element.extra_data['origin']
+        aarch = list_element.extra_data['arch']
         local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
         icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
 

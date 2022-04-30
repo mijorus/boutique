@@ -1,5 +1,3 @@
-import asyncio
-
 from gi.repository import Gtk, GObject
 from .models.AppListElement import AppListElement, InstalledStatus
 from .providers import FlatpakProvider
@@ -76,7 +74,6 @@ class AppDetails(Gtk.ScrolledWindow):
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
             self.primary_action_button.set_label('Install')
             self.primary_action_button.set_css_classes(['suggested-action'])
-
 
     def on_back(self, widget):
         self.emit('show_list', None)
