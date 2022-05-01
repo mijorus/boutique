@@ -14,7 +14,9 @@ install_data(
 
 action_dir = join_paths('hicolor', 'scalable', 'actions')
 action_icons = [
-    join_paths(action_dir, 'funnel-outline-symbolic.svg')
+    join_paths(action_dir, 'funnel-outline-symbolic.svg'),
+    join_paths(action_dir, 'globe-symbolic.svg'),
+    join_paths(action_dir, 'computer-symbolic.svg'),
 ]
 
 install_data(

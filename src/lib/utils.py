@@ -21,4 +21,4 @@ def log(s: str):
 
 def add_page_to_adw_stack(stack: Adw.ViewStack, page: Gtk.Widget, name: str, title: str, icon: str):
     stack.add_titled( page, name, title )
-    stack.get_page(page).set_icon_name('icon')
+    stack.get_page(page).set_icon_name(icon)

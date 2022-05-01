@@ -48,7 +48,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         if self.installed_apps_list:
             self.installed_apps_list_slot.remove(self.installed_apps_list)
 
-        self.installed_apps_list= Gtk.ListBox(css_classes=["boxed-list"])
+        self.installed_apps_list= Gtk.ListBox(css_classes=["boxed-list"], show_separators=False)
 
         for p, provider in providers.items():
             installed: List[AppListElement] = provider.list_installed()

@@ -61,7 +61,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         
         # Add content to the main_stack
         utils.add_page_to_adw_stack(self.main_stack, self.installed_stack, 'installed', 'Installed', 'computer-symbolic' )
-        utils.add_page_to_adw_stack(self.main_stack, self.browse_stack, 'browse', 'Browse' , 'browser-download-symbolic')
+        utils.add_page_to_adw_stack(self.main_stack, self.browse_stack, 'browse', 'Browse' , 'globe-symbolic')
 
         self.set_child(self.main_stack)
         
