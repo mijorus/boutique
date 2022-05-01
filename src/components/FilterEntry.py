@@ -12,4 +12,4 @@ class FilterEntry(Gtk.SearchEntry):
 
         self.props.placeholder_text = label
         self.set_key_capture_widget(capture)
-        # self.get_first_child().set_from_icon_name("/it/mijorus/Boutique/icons/16x16/actions/funnel-outline-symbolic")
+        self.get_first_child().set_from_icon_name("funnel-outline-symbolic")

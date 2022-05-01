@@ -50,8 +50,10 @@ class BoutiqueApplication(Adw.Application):
         necessary.
         """
         win = self.props.active_window
+
         if not win:
             win = BoutiqueWindow(application=self)
+
         win.present()
 
     def on_about_action(self, widget, _):

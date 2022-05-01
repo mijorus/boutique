@@ -35,7 +35,8 @@ class FlatpakProvider(Provider):
         icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
 
         if icon_in_local_path:
-            image = Gtk.Image.new_from_file(local_file_path)
+            # image = Gtk.Image.new_from_file(local_file_path)
+            image = Gtk.Image.new_from_icon_name('funnel-outline-symbolic')
         else:
             image = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
 

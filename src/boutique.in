@@ -40,8 +40,5 @@ if __name__ == '__main__':
     resource = Gio.Resource.load(os.path.join(pkgdatadir, 'boutique.gresource'))
     resource._register()
 
-    icons_resource = Gio.Resource.load(os.path.join(pkgdatadir, 'icons.gresource'))
-    icons_resource._register()
-   
     from boutique import main
     sys.exit(main.main(VERSION))
