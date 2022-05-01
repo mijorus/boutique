@@ -76,3 +76,23 @@ class FlatpakProvider(Provider):
             print(e)
         
         return success
+
+    def search(self, query: str):
+        result = flatpak.search(query)
+
+        output = []
+        for app in result:
+            output.append(
+                AppListElement(
+                    app['name'], 
+                    app['description'], 
+                    app['application'], 
+                    'flatpak', 
+                    InstalledStatus.NOT_INSTALLED,
+
+                    verison=app['version'],
+                    remotes=app['remotes'].split(','),
+                )
+            )
+
+        return output

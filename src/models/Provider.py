@@ -19,3 +19,6 @@ class Provider(ABC):
     
     def install(self, AppListElement) -> bool:
         pass
+
+    def search(self, query: str) -> List[AppListElement]:
+        pass

@@ -10,6 +10,6 @@ class FilterEntry(Gtk.SearchEntry):
     def __init__(self, label, capture: Gtk.Widget=None, **kwargs):
         super().__init__(**kwargs)
 
-        self.props.placeholder_text = 'Filter apps'
+        self.props.placeholder_text = label
         self.set_key_capture_widget(capture)
-        self.get_first_child().set_from_icon_name("/it/mijorus/Boutique/icons/16x16/actions/funnel-outline-symbolic")
+        # self.get_first_child().set_from_icon_name("/it/mijorus/Boutique/icons/16x16/actions/funnel-outline-symbolic")

@@ -16,47 +16,58 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .InstalledAppsList import InstalledAppsList
+from .BrowseApps import BrowseApps
 from .AppDetails import AppDetails
 from .models.AppListElement import AppListElement
-from .lib import flatpak
+from .lib import flatpak, utils
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Adw
 
 
 class BoutiqueWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.titlebar = Gtk.HeaderBar()
-        self.left_button = Gtk.Button(icon_name='go-previous')
+        # Create the "main_stack" widget we will be using in the Window
+        self.main_stack = Adw.ViewStack()
+
+        self.titlebar = Adw.HeaderBar()
+        self.title_widget = Adw.ViewSwitcherTitle(stack=self.main_stack)
+        self.left_button = Gtk.Button(icon_name='go-previous', visible=False)
 
         self.titlebar.pack_start(self.left_button)
-
+        
+        self.titlebar.set_title_widget(self.title_widget)
         self.set_titlebar(self.titlebar)
-
 
         self.set_title('Boutique')
         self.set_default_size(600, 700)
 
-        # Create the "stack" widget we will be using in the Window
-        self.t_stack = Adw.ViewStack()
-        self.stack = Gtk.Stack()
+        # Create the "stack" widget for the "installed apps" view
+        self.installed_stack = Gtk.Stack()
 
         self.installed_apps_list = InstalledAppsList()
-        self.stack.add_child(self.installed_apps_list)
+        self.installed_stack.add_child(self.installed_apps_list)
 
         self.app_details = AppDetails()
-        self.stack.add_child(self.app_details)
+        self.installed_stack.add_child(self.app_details)
+        self.installed_stack.set_visible_child(self.installed_apps_list)
 
-        self.set_child(self.stack)
+        # Create the "stack" widget for the browse view
+        self.browse_stack = Gtk.Stack()
+        self.browse_apps = BrowseApps()
 
+        self.browse_stack.add_child(self.browse_apps)
         
-        self.stack.set_visible_child(self.installed_apps_list)
+        # Add content to the main_stack
+        utils.add_page_to_adw_stack(self.main_stack, self.installed_stack, 'installed', 'Installed', 'computer-symbolic' )
+        utils.add_page_to_adw_stack(self.main_stack, self.browse_stack, 'browse', 'Browse' , 'browser-download-symbolic')
+
+        self.set_child(self.main_stack)
         
+        # Connect signals
         self.installed_apps_list.connect('selected-app', self.on_selected_app)
-        
         self.app_details.connect('show_list', self.on_show_list)
-
         self.left_button.connect('clicked', self.on_left_button_clicked)
 
     def on_selected_app(self, source: Gtk.Widget, list_element: AppListElement):
@@ -64,17 +75,17 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
         self.app_details.set_app_list_element(list_element)
         self.left_button.set_visible(True)
-        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
-        self.stack.set_visible_child(self.app_details)
+        self.installed_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
+        self.installed_stack.set_visible_child(self.app_details)
 
     def on_show_list(self, source: Gtk.Widget=None, _=None):
-        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
+        self.installed_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
         self.left_button.set_visible(False)
 
         self.installed_apps_list.refresh_list()
-        self.stack.set_visible_child(self.installed_apps_list)
+        self.installed_stack.set_visible_child(self.installed_apps_list)
 
     def on_left_button_clicked(self, widget):
-        if self.stack.get_visible_child() == self.app_details:
+        if self.installed_stack.get_visible_child() == self.app_details:
             self.on_show_list()
 

@@ -1,11 +1,11 @@
-from typing import List, Callable
+from typing import List, Callable, Dict
 from .terminal import sh, threaded_sh
 from ..models.AppsListSection import AppsListSection
 from .utils import key_in_dict
 
 _columns_query: List[str] = ['name', 'description', 'application', 'version', 'branch', 'arch', 'runtime', 'origin', 'installation', 'ref', 'active', 'latest', 'size']
 
-def _parse_output(command_output: str, headers: List[str]):
+def _parse_output(command_output: str, headers: List[str], to_sort=True) -> List[Dict]:
     output: List = []
     for row in command_output.split('\n'):
         if not '\t' in row:
@@ -19,7 +19,9 @@ def _parse_output(command_output: str, headers: List[str]):
 
         output.append(app_details)
 
-    output = sorted(output, key=lambda o: o['name'].lower())
+    if to_sort:
+        output = sorted(output, key=lambda o: o['name'].lower())
+
     return output
 
 def full_list() -> List:
@@ -65,3 +67,12 @@ def remove(ref: str, kill_id: str=None, callback: Callable=None):
 
 def install(repo: str, app_id: str):
     sh(f'flatpak install --user -y {repo} {app_id}')
+
+def search(query: str) -> List[Dict]: 
+    query = query.strip()
+    query.replace('\n', '').replace('"', '').replace('"', '').lower()
+
+    cols = ['name', 'description', 'application', 'version', 'branch', 'remotes']
+    res = sh(f'flatpak search --user --columns={",".join(cols)} "{query}"')
+
+    return _parse_output(res, cols, to_sort=False)

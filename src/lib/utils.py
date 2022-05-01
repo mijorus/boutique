@@ -1,4 +1,5 @@
 import os
+from gi.repository import Gtk, Adw
 
 def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     """
@@ -17,3 +18,7 @@ def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
 def log(s: str):
     if os.getenv('DEBUG_MODE', None) == 'dev':
         print(s)
+
+def add_page_to_adw_stack(stack: Adw.ViewStack, page: Gtk.Widget, name: str, title: str, icon: str):
+    stack.add_titled( page, name, title )
+    stack.get_page(page).set_icon_name('icon')
