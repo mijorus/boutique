@@ -39,6 +39,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.set_default_size(600, 700)
 
         # Create the "stack" widget we will be using in the Window
+        self.t_stack = Adw.ViewStack()
         self.stack = Gtk.Stack()
 
         self.installed_apps_list = InstalledAppsList()
@@ -48,6 +49,8 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.stack.add_child(self.app_details)
 
         self.set_child(self.stack)
+
+        
         self.stack.set_visible_child(self.installed_apps_list)
         
         self.installed_apps_list.connect('selected-app', self.on_selected_app)

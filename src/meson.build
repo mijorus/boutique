@@ -9,6 +9,14 @@ gnome.compile_resources('boutique',
   install_dir: pkgdatadir,
 )
 
+gnome.compile_resources('icons',
+  'icons.gresource.xml',
+  gresource_bundle: true,
+  source_dir: meson.current_build_dir(),
+  install: true,
+  install_dir: get_option('datadir') / meson.project_name(),
+)
+
 python = import('python')
 
 conf = configuration_data()

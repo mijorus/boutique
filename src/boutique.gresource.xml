@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/it/mijorus/boutique">
-    <file>window.ui</file>
-    <file>gtk/help-overlay.ui</file>
-    <file>assets/flathub-badge-logo.svg</file>
-    <file>assets/funnel-outline-symbolic.svg</file>
-    <file>assets/style.css</file>
-  </gresource>
+    <gresource prefix="/it/mijorus/boutique">
+        <file>window.ui</file>
+        <file>gtk/help-overlay.ui</file>
+        <file>assets/flathub-badge-logo.svg</file>
+        <file>assets/style.css</file>
+    </gresource>
 </gresources>

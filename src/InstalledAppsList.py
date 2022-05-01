@@ -23,6 +23,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list_slot = Gtk.Box()
         self.installed_apps_list: Gtk.ListBox = None
 
+        # Create the filter search bar
         self.filter_query: str = ''
         self.filter_entry = FilterEntry('Filter installed apps', capture=self, margin_bottom=20)
         self.filter_entry.connect('search-changed', self.trigger_filter_list)
