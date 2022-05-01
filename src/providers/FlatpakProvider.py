@@ -1,4 +1,5 @@
 from ..lib import flatpak
+from ..lib.utils import log, cleanhtml
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from typing import List, Callable
@@ -29,10 +30,15 @@ class FlatpakProvider(Provider):
         return output
 
     def get_icon(self, list_element: AppListElement, repo='flathub'):
-        repo = list_element.extra_data['origin']
-        aarch = list_element.extra_data['arch']
-        local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
-        icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
+        icon_in_local_path = False
+
+        try:
+            repo = list_element.extra_data['origin']
+            aarch = list_element.extra_data['arch']
+            local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
+            icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
+        except Exception as e:
+            log(e)
 
         if icon_in_local_path:
             image = Gtk.Image.new_from_file(local_file_path)
@@ -84,8 +90,8 @@ class FlatpakProvider(Provider):
         for app in result:
             output.append(
                 AppListElement(
-                    app['name'], 
-                    app['description'], 
+                    cleanhtml( app['name'] ), 
+                    cleanhtml( app['description'] ), 
                     app['application'], 
                     'flatpak', 
                     InstalledStatus.NOT_INSTALLED,

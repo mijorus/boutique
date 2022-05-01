@@ -7,7 +7,7 @@ from .providers.providers_list import providers
 from .models.AppListElement import AppListElement
 from .models.Provider import Provider
 from .components.FilterEntry import FilterEntry
-
+from .components.AppListBoxItem import AppListBoxItem
 
 class InstalledAppsList(Gtk.ScrolledWindow):
     __gsignals__ = {
@@ -54,22 +54,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             installed: List[AppListElement] = provider.list_installed()
 
             for i in installed:
-                list_row = Gtk.ListBoxRow(activatable=True, selectable=True)
-                list_row._app: AppListElement = i
-
-                col = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-
-                image = provider.get_icon(i)
-                image.set_pixel_size(45)
-                col.append(image)
-
-                app_details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
-                app_details_box.append( Gtk.Label(label=f'<b>{i.name}</b>', halign=Gtk.Align.START, use_markup=True) )
-                app_details_box.append( Gtk.Label(label=i.description, halign=Gtk.Align.START, lines=1, max_width_chars=100, ellipsize=Pango.EllipsizeMode.END) )
-                
-                col.append(app_details_box)
-                list_row.set_child(col)
-
+                list_row = AppListBoxItem(i, activatable=True, selectable=True)
                 self.installed_apps_list.append(list_row)
 
         self.installed_apps_list_slot.append(self.installed_apps_list)

@@ -1,5 +1,6 @@
+import re
 from typing import List, Callable, Dict
-from .terminal import sh, threaded_sh
+from .terminal import sh, threaded_sh, sanitize
 from ..models.AppsListSection import AppsListSection
 from .utils import key_in_dict
 
@@ -70,9 +71,9 @@ def install(repo: str, app_id: str):
 
 def search(query: str) -> List[Dict]: 
     query = query.strip()
-    query.replace('\n', '').replace('"', '').replace('"', '').lower()
+    query = sanitize(query)
 
     cols = ['name', 'description', 'application', 'version', 'branch', 'remotes']
-    res = sh(f'flatpak search --user --columns={",".join(cols)} "{query}"')
+    res = sh(['flatpak', 'search', '--user', f'--columns={",".join(cols)}', *query.split(' ')])
 
     return _parse_output(res, cols, to_sort=False)
