@@ -44,7 +44,8 @@ class FlatpakProvider(Provider):
 
             url = re.sub(r'\/$', '', remote['url'])
             cache_dir = GLib.get_user_cache_dir()
-            filename = cache_dir + (''.join(random.choice(string.ascii_letters) for i in range(10))) + '.png'
+
+            filename = cache_dir + '/' + (''.join(random.choice(string.ascii_letters) for i in range(10))) + '.png'
 
             try:
                 response = requests.get(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png')
@@ -60,13 +61,14 @@ class FlatpakProvider(Provider):
 
         icon_in_local_path = False
 
-        try:
-            repo = list_element.extra_data['origin']
-            aarch = list_element.extra_data['arch']
-            local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
-            icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
-        except Exception as e:
-            log(e)
+        if 'origin' in list_element.extra_data and 'arch' in list_element.extra_data:
+            try:
+                repo = list_element.extra_data['origin']
+                aarch = list_element.extra_data['arch']
+                local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
+                icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
+            except Exception as e:
+                log(e)
 
         if icon_in_local_path:
             image = Gtk.Image.new_from_file(local_file_path)
@@ -128,7 +130,23 @@ class FlatpakProvider(Provider):
         result = flatpak.search(query)
 
         output = []
+        ignored_patterns = [
+            'org.gtk.Gtk3theme',
+            'org.kde.PlatformTheme',
+            'org.kde.WaylandDecoration',
+            'org.kde.KStyle'
+        ]
+
         for app in result:
+            skip = False
+            for i in ignored_patterns:
+                if i in app['application']:
+                    skip = True
+                    break
+
+            if skip:
+                continue
+
             output.append(
                 AppListElement(
                     cleanhtml( app['name'] ), 
