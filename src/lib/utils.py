@@ -25,7 +25,12 @@ def add_page_to_adw_stack(stack: Adw.ViewStack, page: Gtk.Widget, name: str, tit
     stack.get_page(page).set_icon_name(icon)
 
 # as per recommendation from @freylis, compile once only
-CLEANR = re.compile('<.*?>')
+_html_clearner = None
 def cleanhtml(raw_html: str) -> str:
-  cleantext = re.sub(CLEANR, '', raw_html)
-  return cleantext
+    global _html_clearner
+
+    if not _html_clearner:
+        _html_clearner = re.compile('<.*?>')
+
+    cleantext = re.sub(_html_clearner, '', raw_html)
+    return cleantext

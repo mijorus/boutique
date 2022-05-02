@@ -9,9 +9,14 @@ def _command_is_allowed(command: str) -> bool:
     allowed = ['flatpak']
     return command.split(' ')[0] in allowed
 
-SANITIZER = re.compile(r'[^0-9a-zA-Z!\s]+')
+_sanitizer = None
 def sanitize(_input: str) -> str:
-    return re.sub(SANITIZER, "", _input)
+    global _sanitizer
+
+    if not _sanitizer:
+        _sanitizer = re.compile(r'[^0-9a-zA-Z]+')
+
+    return re.sub(_sanitizer, " ", _input)
 
 def sh(command: Union[str, List[str]]) -> str:
     to_check = command if isinstance(command, str) else command[0]
