@@ -7,14 +7,15 @@ from ..models.AppListElement import AppListElement
 from ..providers.providers_list import providers
 
 class AppListBoxItem(Gtk.ListBoxRow):
-    def __init__(self, list_element: AppListElement, **kwargs):
+    def __init__(self, list_element: AppListElement, load_icon_from_network=False, **kwargs):
         super().__init__(**kwargs)
 
         self._app: AppListElement = list_element
 
         col = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        col.set_css_classes(['app-listbox-item'])
 
-        image = providers[list_element.provider].get_icon(list_element)
+        image = providers[list_element.provider].get_icon(list_element, load_from_network=load_icon_from_network)
         image.set_pixel_size(45)
         col.append(image)
 

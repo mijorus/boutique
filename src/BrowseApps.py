@@ -45,7 +45,7 @@ class BrowseApps(Gtk.ScrolledWindow):
             result: List[AppListElement] = provider.search(query)
 
             for app in result:
-                list_row = AppListBoxItem(app, activatable=True, selectable=True)
+                list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True)
                 self.search_results.append(list_row)
 
         self.search_results_slot.append(self.search_results)

@@ -1,5 +1,12 @@
+import random
+import string
+import threading
+import urllib
+import re
+import requests
+
 from ..lib import flatpak
-from ..lib.utils import log, cleanhtml
+from ..lib.utils import log, cleanhtml, key_in_dict
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from typing import List, Callable
@@ -29,7 +36,28 @@ class FlatpakProvider(Provider):
 
         return output
 
-    def get_icon(self, list_element: AppListElement, repo='flathub'):
+    def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False):
+
+        def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: dict=False):
+            if not remote or not 'url' in remote:
+                return
+
+            url = re.sub(r'\/$', '', remote['url'])
+            cache_dir = GLib.get_user_cache_dir()
+            filename = cache_dir + (''.join(random.choice(string.ascii_letters) for i in range(10))) + '.png'
+
+            try:
+                response = requests.get(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png')
+                response.raise_for_status()
+
+                r = response.content
+
+                GLib.file_set_contents(filename, r)
+                image_widget.set_from_file(filename)
+                GLib.unlink(filename)
+            except Exception as e:
+                log(e)
+
         icon_in_local_path = False
 
         try:
@@ -44,6 +72,19 @@ class FlatpakProvider(Provider):
             image = Gtk.Image.new_from_file(local_file_path)
         else:
             image = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
+            remotes = flatpak.remotes_list()
+
+            if load_from_network:
+                pref_remote = 'flathub' if ('flathub' in list_element.extra_data['remotes']) else list_element.extra_data['remotes'][0]
+                pref_remote_data = key_in_dict(remotes, pref_remote)
+
+                thread = threading.Thread(
+                    target=load_from_network_task, 
+                    daemon=True, 
+                    args=(image, list_element, pref_remote_data, )
+                )
+
+                thread.start()
 
         return image
 

@@ -10,7 +10,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def get_icon(self, AppListElement) -> Gtk.Image:
+    def get_icon(self, AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
         pass
 
     @abstractmethod

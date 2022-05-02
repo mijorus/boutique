@@ -39,7 +39,7 @@ def threaded_sh(command: str, callback: Callable[[str], None]=None):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     
-    def run_command():
+    def run_command(command: str, callback: Callable[[str], None]=None):
         try:
             log(f'Running {command}')
 
@@ -53,6 +53,5 @@ def threaded_sh(command: str, callback: Callable[[str], None]=None):
             log(e.stderr)
             raise Exception(e.stderr) from e
 
-    
-    thread = threading.Thread(target=run_command, daemon=True)
+    thread = threading.Thread(target=run_command, daemon=True, args=(command, callback, ))
     thread.start()

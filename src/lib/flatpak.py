@@ -1,5 +1,5 @@
 import re
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Union
 from .terminal import sh, threaded_sh, sanitize
 from ..models.AppsListSection import AppsListSection
 from .utils import key_in_dict
@@ -77,3 +77,21 @@ def search(query: str) -> List[Dict]:
     res = sh(['flatpak', 'search', '--user', f'--columns={",".join(cols)}', *query.split(' ')])
 
     return _parse_output(res, cols, to_sort=False)
+
+_cached_remotes: Union[Dict['str', Dict], None] = None
+def remotes_list(cache=True) -> Dict['str', Dict]:
+    global _cached_remotes
+
+    if _cached_remotes and cache:
+        return _cached_remotes
+
+    cols = [ 'name','title','url','collection','subset','filter','priority','options','comment','description','homepage','icon' ]
+    result = _parse_output(sh(f'flatpak remotes --user --columns={",".join(cols)}'), cols, False)
+
+    output = {}
+    for r in result:
+        output[r['name']] = r
+        del output[r['name']]['name']
+    
+    _cached_remotes = output
+    return output
