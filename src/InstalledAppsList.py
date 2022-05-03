@@ -54,7 +54,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             installed: List[AppListElement] = provider.list_installed()
 
             for i in installed:
-                list_row = AppListBoxItem(i, activatable=True, selectable=True)
+                list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)
                 self.installed_apps_list.append(list_row)
 
         self.installed_apps_list_slot.append(self.installed_apps_list)
@@ -70,6 +70,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
     def filter_func(self, row: Gtk.ListBoxRow):
         if not len(self.filter_query):
+            row.set_visible(True)
             return True
 
-        return self.filter_query.lower().replace(' ', '') in row._app.name.lower()
+        visible = self.filter_query.lower().replace(' ', '') in row._app.name.lower()
+        row.set_visible(visible)
+
+        return visible
