@@ -1,10 +1,13 @@
+import time
+import threading
 from typing import List, Dict
 from .lib import flatpak, utils
 from .models.AppListElement import AppListElement
+from .models.Provider import Provider
 from .providers.providers_list import providers
 from .components.AppListBoxItem import AppListBoxItem
 
-from gi.repository import Gtk, Adw, GObject
+from gi.repository import Gtk, Adw, GObject, Gio, Gdk
 
 class BrowseApps(Gtk.ScrolledWindow):
     __gsignals__ = {
@@ -43,18 +46,27 @@ class BrowseApps(Gtk.ScrolledWindow):
         if len(query) < 3:
             return
 
-        widget.set_text('')
+        def populate_search(query: str, provider: Provider, append_to: Gtk.ListBox, cursor_target):
+            """Async function to populate the listbox without affecting the main thread"""
+            result: List[AppListElement] = provider.search(query)
+            cursor_target.set_cursor(Gdk.Cursor.new_from_name('wait', None))
 
+            for app in result:
+                list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True, hexpand=True)
+                append_to.append(list_row)
+
+            cursor_target.set_cursor(Gdk.Cursor.new_from_name('default', None))
+
+        widget.set_text('')
         self.search_results = Gtk.ListBox(css_classes=["boxed-list"], hexpand=True, margin_top=10)
 
         # Perform search across all the providers
+        Gio.Application.get_default().mark_busy()
+
         results: List[AppListElement] = []
         for p, provider in providers.items():
-            result: List[AppListElement] = provider.search(query)
-
-            for app in result:
-                list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True)
-                self.search_results.append(list_row)
+            thread = threading.Thread(target=populate_search, args=(query, provider, self.search_results, self, ), daemon=True)
+            thread.start()
 
         self.search_results_slot.append(self.search_results)
         self.search_results.connect('row-activated', self.on_activated_row)

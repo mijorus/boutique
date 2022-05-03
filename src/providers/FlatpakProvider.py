@@ -127,6 +127,7 @@ class FlatpakProvider(Provider):
         return success
 
     def search(self, query: str):
+        installed_apps = flatpak.apps_list()
         result = flatpak.search(query)
 
         output = []
@@ -147,13 +148,19 @@ class FlatpakProvider(Provider):
             if skip:
                 continue
 
+            installed_status = InstalledStatus.NOT_INSTALLED
+            for i in installed_apps:
+                if i['application'] == app['application']:
+                    installed_status = InstalledStatus.INSTALLED
+                    break
+
             output.append(
                 AppListElement(
                     cleanhtml( app['name'] ), 
                     cleanhtml( app['description'] ), 
                     app['application'], 
                     'flatpak', 
-                    InstalledStatus.NOT_INSTALLED,
+                    installed_status,
 
                     verison=app['version'],
                     remotes=app['remotes'].split(','),

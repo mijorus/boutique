@@ -2,7 +2,7 @@ import re
 from typing import List, Callable, Dict, Union
 from .terminal import sh, threaded_sh, sanitize
 from ..models.AppsListSection import AppsListSection
-from .utils import key_in_dict
+from .utils import key_in_dict, log
 
 _columns_query: List[str] = ['name', 'description', 'application', 'version', 'branch', 'arch', 'runtime', 'origin', 'installation', 'ref', 'active', 'latest', 'size']
 
@@ -95,3 +95,10 @@ def remotes_list(cache=True) -> Dict['str', Dict]:
     
     _cached_remotes = output
     return output
+
+def is_installed(app_id: str) -> bool:
+    for i in apps_list():
+        if i['application'] == app_id:
+            return True
+
+    return False
