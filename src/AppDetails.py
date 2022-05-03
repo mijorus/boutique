@@ -2,6 +2,7 @@ from gi.repository import Gtk, GObject
 from .models.AppListElement import AppListElement, InstalledStatus
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
+from .lib.utils import cleanhtml
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
@@ -42,7 +43,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.icon_slot = icon
         self.details_row.prepend(self.icon_slot)
 
-        self.title.set_label(el.name)
+        self.title.set_label(cleanhtml(el.name))
         self.update_installation_status()
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):

@@ -138,7 +138,7 @@ class FlatpakProvider(Provider):
             'org.kde.KStyle'
         ]
 
-        for app in result:
+        for app in result[0:100]:
             skip = False
             for i in ignored_patterns:
                 if i in app['application']:
@@ -156,8 +156,8 @@ class FlatpakProvider(Provider):
 
             output.append(
                 AppListElement(
-                    cleanhtml( app['name'] ), 
-                    cleanhtml( app['description'] ), 
+                    ( app['name'] ), 
+                    ( app['description'] ), 
                     app['application'], 
                     'flatpak', 
                     installed_status,

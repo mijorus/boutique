@@ -1,6 +1,7 @@
 from urllib import request
 from gi.repository import Gtk, Adw, Gdk, GObject, Pango
 from typing import Dict, List
+from ..lib.utils import cleanhtml
 import re
 
 from ..models.AppListElement import AppListElement
@@ -20,8 +21,17 @@ class AppListBoxItem(Gtk.ListBoxRow):
         col.append(image)
 
         app_details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
-        app_details_box.append( Gtk.Label(label=f'<b>{list_element.name}</b>', halign=Gtk.Align.START, use_markup=True) )
-        app_details_box.append( Gtk.Label(label=list_element.description, halign=Gtk.Align.START, lines=1, max_width_chars=100, ellipsize=Pango.EllipsizeMode.END) )
+        app_details_box.append( 
+            Gtk.Label(
+                label=f'<b>{cleanhtml(list_element.name).replace("&", "")}</b>', 
+                halign=Gtk.Align.START, 
+                use_markup=True, 
+                max_width_chars=70, 
+                ellipsize=Pango.EllipsizeMode.END
+            )
+        )
+
+        app_details_box.append( Gtk.Label(label=cleanhtml(list_element.description), halign=Gtk.Align.START, lines=1, max_width_chars=100, ellipsize=Pango.EllipsizeMode.END) )
         
         col.append(app_details_box)
         self.set_child(col)
