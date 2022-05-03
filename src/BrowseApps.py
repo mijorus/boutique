@@ -4,9 +4,13 @@ from .models.AppListElement import AppListElement
 from .providers.providers_list import providers
 from .components.AppListBoxItem import AppListBoxItem
 
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GObject
 
 class BrowseApps(Gtk.ScrolledWindow):
+    __gsignals__ = {
+      "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
+    }
+
     def __init__(self):
         super().__init__()
 
@@ -25,6 +29,10 @@ class BrowseApps(Gtk.ScrolledWindow):
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
+
+    def on_activated_row(self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow):
+        """Emit and event that changes the active page of the Stack in the parent widget"""
+        self.emit('selected-app', row._app)
 
     def on_search_entry_activated(self, widget: Gtk.SearchEntry):
         query = widget.get_text()
@@ -49,3 +57,4 @@ class BrowseApps(Gtk.ScrolledWindow):
                 self.search_results.append(list_row)
 
         self.search_results_slot.append(self.search_results)
+        self.search_results.connect('row-activated', self.on_activated_row)

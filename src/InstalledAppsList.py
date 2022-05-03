@@ -42,6 +42,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
 
     def on_activated_row(self, listbox, row: Gtk.ListBoxRow):
+        """Emit and event that changes the active page of the Stack in the parent widget"""
         self.emit('selected-app', row._app)
 
     def refresh_list(self):

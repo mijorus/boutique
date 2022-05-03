@@ -56,8 +56,10 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         # Create the "stack" widget for the browse view
         self.browse_stack = Gtk.Stack()
         self.browse_apps = BrowseApps()
+        self.browsed_app_details = AppDetails()
 
         self.browse_stack.add_child(self.browse_apps)
+        self.browse_stack.add_child(self.browsed_app_details)
         
         # Add content to the main_stack
         utils.add_page_to_adw_stack(self.main_stack, self.installed_stack, 'installed', 'Installed', 'computer-symbolic' )
@@ -66,11 +68,12 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.set_child(self.main_stack)
         
         # Connect signals
-        self.installed_apps_list.connect('selected-app', self.on_selected_app)
-        self.app_details.connect('show_list', self.on_show_list)
+        self.installed_apps_list.connect('selected-app', self.on_selected_installed_app)
+        self.browse_apps.connect('selected-app', self.on_selected_browsed_app)
+        self.app_details.connect('show_list', self.on_show_installed_list)
         self.left_button.connect('clicked', self.on_left_button_clicked)
 
-    def on_selected_app(self, source: Gtk.Widget, list_element: AppListElement):
+    def on_selected_installed_app(self, source: Gtk.Widget, list_element: AppListElement):
         """Show app details"""
 
         self.app_details.set_app_list_element(list_element)
@@ -78,14 +81,32 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.installed_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.installed_stack.set_visible_child(self.app_details)
 
-    def on_show_list(self, source: Gtk.Widget=None, _=None):
+    def on_selected_browsed_app(self, source: Gtk.Widget, list_element: AppListElement):
+        """Show details for an app from global search"""
+
+        self.browsed_app_details.set_app_list_element(list_element, load_from_network=True)
+        self.left_button.set_visible(True)
+        self.browse_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
+        self.browse_stack.set_visible_child(self.browsed_app_details)
+
+    def on_show_installed_list(self, source: Gtk.Widget=None, _=None):
         self.installed_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
         self.left_button.set_visible(False)
 
         self.installed_apps_list.refresh_list()
         self.installed_stack.set_visible_child(self.installed_apps_list)
 
-    def on_left_button_clicked(self, widget):
-        if self.installed_stack.get_visible_child() == self.app_details:
-            self.on_show_list()
+    def on_show_browsed_list(self, source: Gtk.Widget=None, _=None):
+        self.browse_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
+        self.left_button.set_visible(False)
 
+        self.browse_stack.set_visible_child(self.browse_apps)
+
+    def on_left_button_clicked(self, widget):
+        if self.main_stack.get_visible_child() == self.installed_stack:
+            if self.installed_stack.get_visible_child() == self.app_details:
+                self.on_show_installed_list()
+
+        elif self.main_stack.get_visible_child() == self.browse_stack:
+            if self.browse_stack.get_visible_child() == self.browsed_app_details:
+                self.on_show_browsed_list()

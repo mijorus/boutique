@@ -9,7 +9,7 @@ from ..lib import flatpak
 from ..lib.utils import log, cleanhtml, key_in_dict
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
-from typing import List, Callable
+from typing import List, Callable, Union
 from gi.repository import GLib, Gtk
 
 class FlatpakProvider(Provider):
@@ -38,8 +38,8 @@ class FlatpakProvider(Provider):
 
     def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False):
 
-        def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: dict=False):
-            if not remote or not 'url' in remote:
+        def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: Union[dict, bool]=False):
+            if not remote or 'url' not in remote:
                 return
 
             url = re.sub(r'\/$', '', remote['url'])

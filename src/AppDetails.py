@@ -30,12 +30,12 @@ class AppDetails(Gtk.ScrolledWindow):
         self.main_box.append(self.details_row)
         self.set_child(self.main_box)
 
-    def set_app_list_element(self, el: AppListElement):
+    def set_app_list_element(self, el: AppListElement, load_from_network=False):
         self.app_list_element = el
 
         provider = providers[el.provider]
 
-        icon = provider.get_icon(el)
+        icon = provider.get_icon(el, load_from_network=load_from_network)
         icon.set_pixel_size(45)
         
         self.details_row.remove(self.icon_slot)
