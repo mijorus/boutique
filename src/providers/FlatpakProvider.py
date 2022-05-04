@@ -4,6 +4,7 @@ import threading
 import urllib
 import re
 import requests
+import html2text
 
 from ..lib import flatpak
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
@@ -31,6 +32,7 @@ class FlatpakProvider(Provider):
                     ref=app['ref'], 
                     origin=app['origin'],
                     arch=app['arch'],
+                    version=app['version'],
                 )
             )
 
@@ -163,11 +165,20 @@ class FlatpakProvider(Provider):
                     'flatpak',
                     installed_status,
 
-                    verison=app['version'],
+                    version=app['version'],
                     branch=app['branch'],
                     remotes=app['remotes'].split(','),
                     origin=app['remotes'].split(',')[0],
                 )
             )
+
+        return output
+
+    def get_long_description(self, el: AppListElement):
+        appstream = flatpak.get_appstream(el.id)
+
+        output = ''
+        if key_in_dict(appstream, 'description'):
+            output = html2text.html2text(appstream['description'])
 
         return output

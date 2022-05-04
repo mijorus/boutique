@@ -14,11 +14,14 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def uninstall(self, AppListElementc, c: Callable[[bool], None]):
+    def uninstall(self, el: AppListElement, c: Callable[[bool], None]):
         pass
     
-    def install(self, AppListElement, c: Callable[[bool], None]):
+    def install(self, el: AppListElement, c: Callable[[bool], None]):
         pass
 
     def search(self, query: str) -> List[AppListElement]:
+        pass
+
+    def get_long_description(self, el: AppListElement) ->  str:
         pass

@@ -67,11 +67,16 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
         self.set_child(self.main_stack)
         
-        # Connect signals
+        # Show details of an installed app
         self.installed_apps_list.connect('selected-app', self.on_selected_installed_app)
+        # Show details of an app from global search
         self.browse_apps.connect('selected-app', self.on_selected_browsed_app)
+        # come back to the list from the app details window
         self.app_details.connect('show_list', self.on_show_installed_list)
+        # left arrow click
         self.left_button.connect('clicked', self.on_left_button_clicked)
+        # change visible hild of the main stack
+        self.main_stack.connect('notify::visible-child', self.on_main_stack_change)
 
     def on_selected_installed_app(self, source: Gtk.Widget, list_element: AppListElement):
         """Show app details"""
@@ -110,3 +115,11 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         elif self.main_stack.get_visible_child() == self.browse_stack:
             if self.browse_stack.get_visible_child() == self.browsed_app_details:
                 self.on_show_browsed_list()
+
+    def on_main_stack_change(self, widget, _):
+        stack = widget.get_visible_child()
+
+        if stack == self.installed_stack:
+            self.left_button.set_visible(stack.get_visible_child() == self.app_details)
+        elif stack == self.browse_stack:
+            self.left_button.set_visible(stack.get_visible_child() == self.browsed_app_details)

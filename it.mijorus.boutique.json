@@ -61,6 +61,20 @@
             ]
         },
         {
+            "name": "python3-html2text",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"html2text==2020.1.16\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/ae/88/14655f727f66b3e3199f4467bafcc88283e6c31b562686bf606264e09181/html2text-2020.1.16-py3-none-any.whl",
+                    "sha256": "c7c629882da0cf377d66f073329ccf34a12ed2adf0169b9285ae4e63ef54c82b"
+                }
+            ]
+        },
+        {
             "name" : "boutique",
             "builddir" : true,
             "buildsystem" : "meson",

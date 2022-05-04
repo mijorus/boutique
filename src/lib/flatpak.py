@@ -1,9 +1,12 @@
 import re
+import urllib
+import requests
 from typing import List, Callable, Dict, Union
 from .terminal import sh, threaded_sh, sanitize
 from ..models.AppsListSection import AppsListSection
 from .utils import key_in_dict, log
 
+API_BASEURL = 'https://flathub.org/api/v2'
 _columns_query: List[str] = ['name', 'description', 'application', 'version', 'branch', 'arch', 'runtime', 'origin', 'installation', 'ref', 'active', 'latest', 'size']
 
 def _parse_output(command_output: str, headers: List[str], to_sort=True) -> List[Dict]:
@@ -102,3 +105,7 @@ def is_installed(app_id: str) -> bool:
             return True
 
     return False
+
+def get_appstream(app_id):
+    response = requests.get(API_BASEURL + f'/appstream/{ urllib.parse.quote(app_id, safe="") }').json()
+    return response

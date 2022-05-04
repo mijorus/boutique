@@ -13,7 +13,7 @@ def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     subdict = _dict
 
     for k in keys:
-        subdict = subdict[k] if k in subdict else None
+        subdict = subdict[k] if (subdict and k in subdict) else None
         if subdict is None: break
 
     return subdict
