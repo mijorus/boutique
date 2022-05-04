@@ -1,6 +1,8 @@
 import re
 import os
-from gi.repository import Gtk, Adw
+import requests
+
+from gi.repository import Gtk, Adw, GdkPixbuf, GLib
 
 def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     """
@@ -34,3 +36,13 @@ def cleanhtml(raw_html: str) -> str:
 
     cleantext = re.sub(_html_clearner, '', raw_html)
     return cleantext
+
+def gtk_image_from_url(url: str, image: Gtk.Image):
+    response = requests.get(url)
+    response.raise_for_status()
+
+    loader = GdkPixbuf.PixbufLoader()
+    loader.write_bytes(GLib.Bytes.new(response.content))
+    loader.close()
+
+    image.set_from_pixbuf(loader.get_pixbuf())

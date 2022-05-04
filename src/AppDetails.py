@@ -34,9 +34,9 @@ class AppDetails(Gtk.ScrolledWindow):
     def set_app_list_element(self, el: AppListElement, load_from_network=False):
         self.app_list_element = el
 
-        provider = providers[el.provider]
+        self.provider = providers[el.provider]
 
-        icon = provider.get_icon(el, load_from_network=load_from_network)
+        icon = self.provider.get_icon(el, load_from_network=load_from_network)
         icon.set_pixel_size(45)
         
         self.details_row.remove(self.icon_slot)
@@ -51,7 +51,7 @@ class AppDetails(Gtk.ScrolledWindow):
             self.app_list_element.set_installed_status(InstalledStatus.UNINSTALLING)
             self.update_installation_status()
 
-            providers[self.app_list_element.provider].uninstall(
+            self.provider.uninstall(
                 self.app_list_element, 
                 lambda result: self.update_installation_status()
             )
@@ -60,8 +60,13 @@ class AppDetails(Gtk.ScrolledWindow):
             pass
 
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
-            self.provider.install(self.app_list_element)
+            self.app_list_element.set_installed_status(InstalledStatus.INSTALLING)
             self.update_installation_status()
+
+            self.provider.install(
+                self.app_list_element,
+                lambda result: self.update_installation_status()
+            )
 
     def update_installation_status(self):
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
@@ -70,6 +75,10 @@ class AppDetails(Gtk.ScrolledWindow):
 
         elif self.app_list_element.installed_status == InstalledStatus.UNINSTALLING:
             self.primary_action_button.set_label('Uninstalling...')
+            self.primary_action_button.set_css_classes([])
+
+        elif self.app_list_element.installed_status == InstalledStatus.INSTALLING:
+            self.primary_action_button.set_label('Installing...')
             self.primary_action_button.set_css_classes([])
 
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:

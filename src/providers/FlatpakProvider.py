@@ -6,11 +6,11 @@ import re
 import requests
 
 from ..lib import flatpak
-from ..lib.utils import log, cleanhtml, key_in_dict
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from typing import List, Callable, Union
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 
 class FlatpakProvider(Provider):
     def __init__(self):
@@ -43,19 +43,9 @@ class FlatpakProvider(Provider):
                 return
 
             url = re.sub(r'\/$', '', remote['url'])
-            cache_dir = GLib.get_user_cache_dir()
-
-            filename = cache_dir + '/' + (''.join(random.choice(string.ascii_letters) for i in range(10))) + '.png'
 
             try:
-                response = requests.get(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png')
-                response.raise_for_status()
-
-                r = response.content
-
-                GLib.file_set_contents(filename, r)
-                image_widget.set_from_file(filename)
-                GLib.unlink(filename)
+                gtk_image_from_url(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png', image_widget)
             except Exception as e:
                 log(e)
 
@@ -114,17 +104,28 @@ class FlatpakProvider(Provider):
 
         return success
 
-    def install(self, list_element: AppListElement) -> bool:
+    def install(self, list_element: AppListElement, callback: Callable[[bool], None]=None):
+        if not 'origin' in list_element.extra_data:
+            raise Exception('Missing "origin" in list_element')
+
         success = False
 
-        try:
-            flatpak.install(list_element.extra_data['origin'], list_element.id)
-            list_element.set_installed_status(InstalledStatus.INSTALLED)
-            success = True
-        except Exception as e:
-            print(e)
-        
-        return success
+        def install_thread(list_element: AppListElement, callback: Callable):
+            try:
+                ref = f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
+                list_element.extra_data['ref'] = ref
+                flatpak.install(list_element.extra_data['origin'], ref)
+                list_element.set_installed_status(InstalledStatus.INSTALLED)
+
+                if callback: callback(True)
+
+            except Exception as e:
+                print(e)
+                list_element.set_installed_status(InstalledStatus.ERROR)
+                if callback: callback(False)
+
+        thread = threading.Thread(target=install_thread, args=(list_element, callback, ), daemon=True)
+        thread.start()
 
     def search(self, query: str):
         installed_apps = flatpak.apps_list()
@@ -159,11 +160,13 @@ class FlatpakProvider(Provider):
                     ( app['name'] ), 
                     ( app['description'] ), 
                     app['application'], 
-                    'flatpak', 
+                    'flatpak',
                     installed_status,
 
                     verison=app['version'],
+                    branch=app['branch'],
                     remotes=app['remotes'].split(','),
+                    origin=app['remotes'].split(',')[0],
                 )
             )
 

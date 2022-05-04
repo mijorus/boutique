@@ -46,6 +46,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.emit('selected-app', row._app)
 
     def refresh_list(self):
+        self.set_cursor(Gdk.Cursor.new_from_name('wait', None))
         if self.installed_apps_list:
             self.installed_apps_list_slot.remove(self.installed_apps_list)
 
@@ -61,6 +62,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list_slot.append(self.installed_apps_list)
         self.installed_apps_list.set_filter_func(self.filter_func)
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
+        self.set_cursor(Gdk.Cursor.new_from_name('default', None))
 
     def trigger_filter_list(self, widget):
         if not self.installed_apps_list:

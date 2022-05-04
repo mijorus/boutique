@@ -17,7 +17,7 @@ class Provider(ABC):
     def uninstall(self, AppListElementc, c: Callable[[bool], None]):
         pass
     
-    def install(self, AppListElement) -> bool:
+    def install(self, AppListElement, c: Callable[[bool], None]):
         pass
 
     def search(self, query: str) -> List[AppListElement]:
