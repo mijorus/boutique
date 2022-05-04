@@ -175,7 +175,7 @@ class FlatpakProvider(Provider):
         return output
 
     def get_long_description(self, el: AppListElement):
-        appstream = flatpak.get_appstream(el.id)
+        appstream = flatpak.get_appstream(el.id, key_in_dict(el.extra_data, 'origin'))
 
         output = ''
         if key_in_dict(appstream, 'description'):

@@ -106,6 +106,8 @@ def is_installed(app_id: str) -> bool:
 
     return False
 
-def get_appstream(app_id):
-    response = requests.get(API_BASEURL + f'/appstream/{ urllib.parse.quote(app_id, safe="") }').json()
-    return response
+def get_appstream(app_id, origin=None) -> dict:
+    if origin == 'flathub':
+        return requests.get(API_BASEURL + f'/appstream/{ urllib.parse.quote(app_id, safe="") }').json()
+
+    return dict()

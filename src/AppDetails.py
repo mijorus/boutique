@@ -1,3 +1,4 @@
+import threading
 from gi.repository import Gtk, GObject
 from .models.AppListElement import AppListElement, InstalledStatus
 from .providers import FlatpakProvider
@@ -65,9 +66,12 @@ class AppDetails(Gtk.ScrolledWindow):
         self.version.set_label( '' if not version_label else version_label )
         self.app_id.set_label( self.app_list_element.id )
         
-        self.description.set_markup( 
-            self.provider.get_long_description(self.app_list_element),
+        self.description.set_label('')
+        thread = threading.Thread(
+            target=lambda: self.description.set_label( self.provider.get_long_description(self.app_list_element) )
         )
+
+        thread.start()
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
