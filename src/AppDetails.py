@@ -1,5 +1,5 @@
 import threading
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, Adw
 from .models.AppListElement import AppListElement, InstalledStatus
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
@@ -21,10 +21,10 @@ class AppDetails(Gtk.ScrolledWindow):
         self.details_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.icon_slot = Gtk.Box()
 
-        title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,)
-        self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START)
-        self.version = Gtk.Label(label='', halign=Gtk.Align.START)
-        self.app_id = Gtk.Label(label='', halign=Gtk.Align.START)
+        title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2)
+        self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START, selectable=True)
+        self.version = Gtk.Label(label='', halign=Gtk.Align.START, css_classes=['dim-label'])
+        self.app_id = Gtk.Label(label='', halign=Gtk.Align.START, selectable=True, css_classes=['dim-label'])
 
         title_col.append(self.title)
         title_col.append(self.app_id)
@@ -39,13 +39,15 @@ class AppDetails(Gtk.ScrolledWindow):
 
         # 2nd row
         desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
-        self.description = Gtk.Label(label='', halign=Gtk.Align.START, wrap=True)
+        self.description = Gtk.Label(label='', halign=Gtk.Align.START, wrap=True, selectable=True)
         
         desc_row.append(self.description)
 
         self.main_box.append(self.details_row)
         self.main_box.append(desc_row)
-        self.set_child(self.main_box)
+
+        clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
+        self.set_child(clamp)
 
     def set_app_list_element(self, el: AppListElement, load_from_network=False):
         self.app_list_element = el
@@ -63,8 +65,8 @@ class AppDetails(Gtk.ScrolledWindow):
         self.update_installation_status()
 
         version_label = key_in_dict(el.extra_data, 'version')
-        self.version.set_label( '' if not version_label else version_label )
-        self.app_id.set_label( self.app_list_element.id )
+        self.version.set_markup( '' if not version_label else f'<small>{version_label}</small>' )
+        self.app_id.set_markup( f'<small>{self.app_list_element.id}</small>' )
         
         self.description.set_label('')
         thread = threading.Thread(
