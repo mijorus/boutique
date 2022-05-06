@@ -1,9 +1,10 @@
 import re
 import urllib
 import requests
-from typing import List, Callable, Dict, Union
+from typing import List, Callable, Dict, Union, Literal
 from .terminal import sh, threaded_sh, sanitize
 from ..models.AppsListSection import AppsListSection
+from ..models.Models import FlatpakHistoryElement
 from .utils import key_in_dict, log
 
 API_BASEURL = 'https://flathub.org/api/v2'
@@ -99,15 +100,38 @@ def remotes_list(cache=True) -> Dict['str', Dict]:
     _cached_remotes = output
     return output
 
-def is_installed(app_id: str) -> bool:
-    for i in apps_list():
-        if i['application'] == app_id:
-            return True
-
-    return False
+def is_installed(ref: str) -> bool:
+    try:
+        sh(['flatpak', 'info', ref], hide_err=True)
+        return True
+    except Exception as e:
+        return False
 
 def get_appstream(app_id, origin=None) -> dict:
     if origin == 'flathub':
         return requests.get(API_BASEURL + f'/appstream/{ urllib.parse.quote(app_id, safe="") }').json()
 
     return dict()
+
+def get_app_history(ref: str, origin: str):
+    log = sh(f'flatpak remote-info {origin} {ref} --log --user')
+    history = log.split('History:', maxsplit=1)
+
+    output: List[FlatpakHistoryElement] = []
+    for h in history[1].split('\n\n', maxsplit=20):
+        rows = h.split('\n')
+
+        h_el: Union[FlatpakHistoryElement, False] = FlatpakHistoryElement()
+        for row in rows:
+            row = row.strip()
+            if not len( row ):
+                h_el = False
+                break
+            else:
+                cols = row.split(':', maxsplit=1)
+                h_el.__setattr__(cols[0].lower(), cols[1].strip())
+        
+        if h_el:
+            output.append(h_el)
+
+    return output

@@ -22,7 +22,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.icon_slot = Gtk.Box()
 
         title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2)
-        self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START, selectable=True)
+        self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START)
         self.version = Gtk.Label(label='', halign=Gtk.Align.START, css_classes=['dim-label'])
         self.app_id = Gtk.Label(label='', halign=Gtk.Align.START, selectable=True, css_classes=['dim-label'])
 
@@ -43,8 +43,15 @@ class AppDetails(Gtk.ScrolledWindow):
         
         desc_row.append(self.description)
 
+        # 3rd row
+        self.third_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.third_row.append(self.extra_data)
+
         self.main_box.append(self.details_row)
         self.main_box.append(desc_row)
+        self.main_box.append(self.third_row)
+
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
@@ -70,10 +77,15 @@ class AppDetails(Gtk.ScrolledWindow):
         
         self.description.set_label('')
         thread = threading.Thread(
-            target=lambda: self.description.set_label( self.provider.get_long_description(self.app_list_element) )
+            target=lambda: self.description.set_markup( self.provider.get_long_description(self.app_list_element) )
         )
 
         thread.start()
+
+        self.third_row.remove(self.extra_data)
+        self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.third_row.append(self.extra_data)
+        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
@@ -98,6 +110,7 @@ class AppDetails(Gtk.ScrolledWindow):
             )
 
     def update_installation_status(self):
+        self.app_list_element.installed_status = InstalledStatus.INSTALLED if self.provider.is_installed(self.app_list_element) else InstalledStatus.NOT_INSTALLED
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
             self.primary_action_button.set_label('Uninstall')
             self.primary_action_button.set_css_classes(['destructive-action'])

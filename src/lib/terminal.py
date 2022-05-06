@@ -18,7 +18,7 @@ def sanitize(_input: str) -> str:
 
     return re.sub(_sanitizer, " ", _input)
 
-def sh(command: Union[str, List[str]]) -> str:
+def sh(command: Union[str, List[str]], hide_err=False) -> str:
     to_check = command if isinstance(command, str) else command[0]
     if not _command_is_allowed(to_check):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
@@ -29,7 +29,7 @@ def sh(command: Union[str, List[str]]) -> str:
         cmd = f'flatpak-spawn --host {command}'.split(' ') if isinstance(command, str) else ['flatpak-spawn', '--host', *command]
         output = subprocess.run(cmd, encoding='utf-8', shell=False, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        print(e.stderr)
+        if not hide_err: print(e.stderr)
         raise Exception(e.stderr) from e
 
     return re.sub(r'\n$', '', output.stdout)

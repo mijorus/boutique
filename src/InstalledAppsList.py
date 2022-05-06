@@ -40,7 +40,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-
     def on_activated_row(self, listbox, row: Gtk.ListBoxRow):
         """Emit and event that changes the active page of the Stack in the parent widget"""
         self.emit('selected-app', row._app)
@@ -50,7 +49,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         if self.installed_apps_list:
             self.installed_apps_list_slot.remove(self.installed_apps_list)
 
-        self.installed_apps_list= Gtk.ListBox(css_classes=["boxed-list"], show_separators=False)
+        self.installed_apps_list= Gtk.ListBox(css_classes=["boxed-list"])
 
         for p, provider in providers.items():
             installed: List[AppListElement] = provider.list_installed()

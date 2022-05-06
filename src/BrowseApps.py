@@ -51,6 +51,16 @@ class BrowseApps(Gtk.ScrolledWindow):
             result: List[AppListElement] = provider.search(query)
             cursor_target.set_cursor(Gdk.Cursor.new_from_name('wait', None))
 
+            if not result:
+                list_row = Gtk.Label(
+                    label='No apps found',
+                    margin_top=20,
+                    margin_bottom=20,
+                )
+
+                append_to.append(list_row)
+                return
+
             for app in result:
                 list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True, hexpand=True)
                 append_to.append(list_row)

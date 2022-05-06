@@ -6,16 +6,20 @@ import re
 import requests
 import html2text
 
-from ..lib import flatpak
+from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
+from ..models.Models import FlatpakHistoryElement
 from typing import List, Callable, Union
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 
 class FlatpakProvider(Provider):
     def __init__(self):
         pass
+
+    def is_installed(self, list_element: AppListElement):
+        return flatpak.is_installed(self.get_ref(list_element))
 
     def list_installed(self) -> List[AppListElement]:
         output = []
@@ -174,11 +178,58 @@ class FlatpakProvider(Provider):
 
         return output
 
-    def get_long_description(self, el: AppListElement):
+    def get_long_description(self, el: AppListElement) -> str:
         appstream = flatpak.get_appstream(el.id, key_in_dict(el.extra_data, 'origin'))
 
         output = ''
         if key_in_dict(appstream, 'description'):
             output = html2text.html2text(appstream['description'])
 
-        return output
+        return f'<b>{el.description}</b>\n\n{output}'.replace("&", "&amp;")
+
+    def load_extra_data_in_appdetails(self, widget, list_element: AppListElement):
+        remotes = flatpak.remotes_list()
+        if 'origin' in list_element.extra_data:
+            origin = list_element.extra_data['origin']
+            source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
+            source_row.append( Gtk.Label(label='Source', css_classes=['heading'], halign=Gtk.Align.START))
+            
+            if (origin in remotes) and 'homepage' in remotes[origin]:
+                source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START)
+                source_heading.set_markup(f"""<a href="{remotes[origin]['homepage']}">{remotes[origin]['title']}</a>""")
+                source_row.append(source_heading)
+            else:
+                source_row.append(Gtk.Label( label=f"""{remotes['origin']['title']}""", halign=Gtk.Align.START))
+
+            widget.append(source_row)
+
+            def create_log_expander(append_to: Gtk.Widget, list_element: AppListElement, origin: str, expander: Gtk.Expander):
+                try:
+                    history: List[FlatpakHistoryElement] = flatpak.get_app_history(self.get_ref(list_element), origin)
+                except Exception as e:
+                    expander.set_label('Couldn\'t load history data')
+                    return
+
+                expander.set_label('History')
+
+                list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
+                for h in history:
+                    row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=5, margin_bottom=5, margin_start=5)
+                    row_title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'])
+                    row_value = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True)
+                    row.append(row_title)
+                    row.append(row_value)
+
+                    list_box.append(row)
+
+                expander.set_child(list_box)
+
+            expander = Gtk.Expander(label="Loading old versions...")
+            widget.append(expander)
+            threading.Thread(target=create_log_expander, args=(widget, list_element, origin, expander)).start()
+
+    def get_ref(self, list_element: AppListElement):
+        if 'ref' in list_element.extra_data:
+            return list_element.extra_data['ref']
+
+        return f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
