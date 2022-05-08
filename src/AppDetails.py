@@ -38,10 +38,10 @@ class AppDetails(Gtk.ScrolledWindow):
         self.details_row.append(self.primary_action_button)
 
         # 2nd row
-        desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
+        self.desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
         self.description = Gtk.Label(label='', halign=Gtk.Align.START, wrap=True, selectable=True)
         
-        desc_row.append(self.description)
+        self.desc_row.append(self.description)
 
         # 3rd row
         self.third_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -49,7 +49,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.third_row.append(self.extra_data)
 
         self.main_box.append(self.details_row)
-        self.main_box.append(desc_row)
+        self.main_box.append(self.desc_row)
         self.main_box.append(self.third_row)
 
 
@@ -76,11 +76,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.app_id.set_markup( f'<small>{self.app_list_element.id}</small>' )
         
         self.description.set_label('')
-        thread = threading.Thread(
-            target=lambda: self.description.set_markup( self.provider.get_long_description(self.app_list_element) )
-        )
-
-        thread.start()
+        threading.Thread(target=self.load_description).start()
 
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -126,6 +122,15 @@ class AppDetails(Gtk.ScrolledWindow):
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
             self.primary_action_button.set_label('Install')
             self.primary_action_button.set_css_classes(['suggested-action'])
+
+    def load_description(self):
+        spinner = Gtk.Spinner(spinning=True)
+        self.desc_row.append(spinner)
+
+        desc = self.provider.get_long_description(self.app_list_element) 
+        self.desc_row.remove(spinner)
+
+        self.description.set_markup(desc)
 
     def on_back(self, widget):
         self.emit('show_list', None)

@@ -102,7 +102,7 @@ def remotes_list(cache=True) -> Dict['str', Dict]:
 
 def is_installed(ref: str) -> bool:
     try:
-        sh(['flatpak', 'info', ref], hide_err=True)
+        sh(['flatpak', 'info', '-r', ref], hide_err=True)
         return True
     except Exception as e:
         return False

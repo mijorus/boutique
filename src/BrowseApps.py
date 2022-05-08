@@ -63,14 +63,14 @@ class BrowseApps(Gtk.ScrolledWindow):
 
     def populate_search(self, query: str, provider: Provider):
         """Async function to populate the listbox without affecting the main thread"""
-        spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True))
+        self.search_results.set_css_classes(['boxed-list'])
+        spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
         self.search_results.append(spinner)
 
         self.set_cursor(Gdk.Cursor.new_from_name('wait', None))
         result: List[AppListElement] = provider.search(query)
 
         self.search_results.remove(spinner)
-        self.search_results.set_css_classes(['boxed-list'])
 
         if not result:
             list_row = Gtk.Label(

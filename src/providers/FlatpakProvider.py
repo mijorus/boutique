@@ -10,7 +10,7 @@ from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
-from ..models.Models import FlatpakHistoryElement
+from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 
@@ -111,11 +111,6 @@ class FlatpakProvider(Provider):
         return success
 
     def install(self, list_element: AppListElement, callback: Callable[[bool], None]=None):
-        if not 'origin' in list_element.extra_data:
-            raise Exception('Missing "origin" in list_element')
-
-        success = False
-
         def install_thread(list_element: AppListElement, callback: Callable):
             try:
                 ref = f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
@@ -129,6 +124,9 @@ class FlatpakProvider(Provider):
                 print(e)
                 list_element.set_installed_status(InstalledStatus.ERROR)
                 if callback: callback(False)
+
+        if not 'origin' in list_element.extra_data:
+            raise Exception('Missing "origin" in list_element')
 
         thread = threading.Thread(target=install_thread, args=(list_element, callback, ), daemon=True)
         thread.start()
@@ -257,3 +255,29 @@ class FlatpakProvider(Provider):
             return
 
         threading.Thread(target=create_log_expander, args=(expander, )).start()
+
+    def list_upgradable(self) -> List[AppUpdateElement]:
+        update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
+        
+        if not '1.\t' in update_output:
+            return []
+
+        update_section = update_output.split('1.\t', maxsplit=1)[1]
+        update_section = '1.\t' + update_section
+
+        start_pattern = re.compile(r'^([0-9]+\.)')
+        output = []
+        for row in update_section.split('\n'):
+            if not re.match(start_pattern, row):
+                break
+            else:
+                cols = []
+                for i, col in enumerate(row.split('\t')):
+                    col = col.strip()
+                    if not re.match(start_pattern, col) and len(col) > 0:
+                        cols.append(col)
+
+                update_size = ''.join( re.findall(r'([0-9]|,)',cols[4], flags=re.A) )
+                output.append( AppUpdateElement(cols[0], update_size))
+
+        return output

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Callable
 from .AppListElement import AppListElement
+from .Models import AppUpdateElement
 from gi.repository import Gtk
 
 class Provider(ABC):
@@ -35,4 +36,8 @@ class Provider(ABC):
 
     @abstractmethod
     def load_extra_data_in_appdetails(self, widget: Gtk.Widget, el: AppListElement):
+        pass
+
+    @abstractmethod
+    def list_upgradable(self) -> List[AppUpdateElement]:
         pass
