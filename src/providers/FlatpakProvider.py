@@ -190,46 +190,70 @@ class FlatpakProvider(Provider):
     def load_extra_data_in_appdetails(self, widget, list_element: AppListElement):
         remotes = flatpak.remotes_list()
         if 'origin' in list_element.extra_data:
-            origin = list_element.extra_data['origin']
-            source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
-            source_row.append( Gtk.Label(label='Source', css_classes=['heading'], halign=Gtk.Align.START))
-            
-            if (origin in remotes) and 'homepage' in remotes[origin]:
-                source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START)
-                source_heading.set_markup(f"""<a href="{remotes[origin]['homepage']}">{remotes[origin]['title']}</a>""")
-                source_row.append(source_heading)
+
+            element_remotes: List[str] = []
+            if 'remotes' in list_element.extra_data:
+                element_remotes.extend(list_element.extra_data['remotes'])
             else:
-                source_row.append(Gtk.Label( label=f"""{remotes['origin']['title']}""", halign=Gtk.Align.START))
+                element_remotes.append(list_element.extra_data['origin'])
+            
+
+            source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
+            source_row.append( Gtk.Label(label='Available from:', css_classes=['heading'], halign=Gtk.Align.START))
+            
+            for r in element_remotes:
+                if (r in remotes) and 'homepage' in remotes[r]:
+                    source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START)
+                    source_heading.set_markup(f"""<a href="{remotes[r]['homepage']}">{remotes[r]['title']}</a>""")
+                    source_row.append(source_heading)
+                else:
+                    source_row.append(Gtk.Label( label=f"""{remotes['origin']['title']}""", halign=Gtk.Align.START))
 
             widget.append(source_row)
 
-            def create_log_expander(append_to: Gtk.Widget, list_element: AppListElement, origin: str, expander: Gtk.Expander):
-                try:
-                    history: List[FlatpakHistoryElement] = flatpak.get_app_history(self.get_ref(list_element), origin)
-                except Exception as e:
-                    expander.set_label('Couldn\'t load history data')
-                    return
-
-                expander.set_label('History')
-
-                list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
-                for h in history:
-                    row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=5, margin_bottom=5, margin_start=5)
-                    row_title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'])
-                    row_value = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True)
-                    row.append(row_title)
-                    row.append(row_value)
-
-                    list_box.append(row)
-
-                expander.set_child(list_box)
-
-            expander = Gtk.Expander(label="Loading old versions...")
+            expander = Gtk.Expander(label="Show history", child=Gtk.Spinner())
+            expander.ref = self.get_ref(list_element)
+            expander.remote = list_element.extra_data['origin']
+            expander.has_history = False
+            expander.connect('notify::expanded', self.on_history_expanded)
+            
             widget.append(expander)
-            threading.Thread(target=create_log_expander, args=(widget, list_element, origin, expander)).start()
 
     def get_ref(self, list_element: AppListElement):
         if 'ref' in list_element.extra_data:
             return list_element.extra_data['ref']
 
         return f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
+
+    def on_history_expanded(self, expander: Gtk.Expander, state):
+        def create_log_expander(expander: Gtk.Expander):
+            expander.set_label('Loading history...')
+            if isinstance(expander.get_child(), Gtk.Spinner):
+                expander.get_child().set_spinning(True)
+
+            try:
+                history: List[FlatpakHistoryElement] = flatpak.get_app_history(expander.ref, expander.remote)
+            except Exception as e:
+                log(e)
+                expander.set_label('Couldn\'t load history data')
+                return
+
+            expander.set_label('History')
+
+            list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
+            for h in history:
+                row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=5, margin_bottom=5, margin_start=5)
+                row_title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'])
+                row_value = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True)
+                row.append(row_title)
+                row.append(row_value)
+
+                list_box.append(row)
+
+            expander.has_history = True
+            expander.set_child(list_box)
+
+        if expander.has_history:
+            return
+
+        threading.Thread(target=create_log_expander, args=(expander, )).start()

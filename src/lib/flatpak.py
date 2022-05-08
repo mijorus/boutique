@@ -107,14 +107,14 @@ def is_installed(ref: str) -> bool:
     except Exception as e:
         return False
 
-def get_appstream(app_id, origin=None) -> dict:
-    if origin == 'flathub':
+def get_appstream(app_id, remote=None) -> dict:
+    if remote == 'flathub':
         return requests.get(API_BASEURL + f'/appstream/{ urllib.parse.quote(app_id, safe="") }').json()
 
     return dict()
 
-def get_app_history(ref: str, origin: str):
-    log = sh(f'flatpak remote-info {origin} {ref} --log --user')
+def get_app_history(ref: str, remote: str):
+    log = sh(f'flatpak remote-info {remote} {ref} --log --user')
     history = log.split('History:', maxsplit=1)
 
     output: List[FlatpakHistoryElement] = []

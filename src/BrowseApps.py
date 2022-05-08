@@ -20,6 +20,7 @@ class BrowseApps(Gtk.ScrolledWindow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20, margin_bottom=20)
 
         self.search_entry = Gtk.SearchEntry()
+        self.search_results: Gtk.ListBox = None
 
         self.search_entry.props.placeholder_text = 'Press "Enter" to search'
         self.search_entry.connect('activate', self.on_search_entry_activated)
@@ -46,37 +47,43 @@ class BrowseApps(Gtk.ScrolledWindow):
         if len(query) < 3:
             return
 
-        def populate_search(query: str, provider: Provider, append_to: Gtk.ListBox, cursor_target):
-            """Async function to populate the listbox without affecting the main thread"""
-            result: List[AppListElement] = provider.search(query)
-            cursor_target.set_cursor(Gdk.Cursor.new_from_name('wait', None))
-
-            if not result:
-                list_row = Gtk.Label(
-                    label='No apps found',
-                    margin_top=20,
-                    margin_bottom=20,
-                )
-
-                append_to.append(list_row)
-                return
-
-            for app in result:
-                list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True, hexpand=True)
-                append_to.append(list_row)
-
-            cursor_target.set_cursor(Gdk.Cursor.new_from_name('default', None))
-
         widget.set_text('')
-        self.search_results = Gtk.ListBox(css_classes=["boxed-list"], hexpand=True, margin_top=10)
+        self.search_results = Gtk.ListBox(hexpand=True, margin_top=10)
 
         # Perform search across all the providers
         Gio.Application.get_default().mark_busy()
 
         results: List[AppListElement] = []
         for p, provider in providers.items():
-            thread = threading.Thread(target=populate_search, args=(query, provider, self.search_results, self, ), daemon=True)
+            thread = threading.Thread(target=self.populate_search, args=(query, provider, ), daemon=True)
             thread.start()
 
         self.search_results_slot.append(self.search_results)
         self.search_results.connect('row-activated', self.on_activated_row)
+
+    def populate_search(self, query: str, provider: Provider):
+        """Async function to populate the listbox without affecting the main thread"""
+        spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True))
+        self.search_results.append(spinner)
+
+        self.set_cursor(Gdk.Cursor.new_from_name('wait', None))
+        result: List[AppListElement] = provider.search(query)
+
+        self.search_results.remove(spinner)
+        self.search_results.set_css_classes(['boxed-list'])
+
+        if not result:
+            list_row = Gtk.Label(
+                label='No apps found',
+                margin_top=20,
+                margin_bottom=20,
+            )
+
+            self.search_results.append(list_row)
+
+        else:
+            for app in result:
+                list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True, hexpand=True)
+                self.search_results.append(list_row)
+
+        self.set_cursor(Gdk.Cursor.new_from_name('default', None))
