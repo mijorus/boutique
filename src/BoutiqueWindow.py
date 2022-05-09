@@ -99,6 +99,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.left_button.set_visible(False)
 
         self.installed_apps_list.refresh_list()
+        self.installed_apps_list.refresh_upgradable()
         self.installed_stack.set_visible_child(self.installed_apps_list)
 
     def on_show_browsed_list(self, source: Gtk.Widget=None, _=None):

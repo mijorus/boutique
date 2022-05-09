@@ -32,7 +32,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.refresh_list()
 
-        self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=False)
         self.updates_row_list: Optional[Gtk.ListBox] = None
         self.updates_row.append( Gtk.Label(label='Available updates', css_classes=['title-4'], margin_bottom=5, halign=Gtk.Align.START) )
 
@@ -47,7 +47,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
 
         self.refresh_upgradable()
-
         self.set_child(clamp)
 
     def on_activated_row(self, listbox, row: Gtk.ListBoxRow):
@@ -83,19 +82,24 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list.invalidate_filter()
 
     def refresh_upgradable_list(self):
+        self.updates_row.set_visible(False)
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
         self.updates_row_list.set_filter_func(self.filter_func)
 
-        upgradable = []
+        upgradable = 0
         for p, provider in providers.items():
             for upg in provider.list_upgradable():
                 for row in self.installed_apps_list_rows:
                     if row._app.id == upg.id:
+                        upgradable += 1
                         row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
                         app_list_item = AppListBoxItem(row._app, activatable=True, selectable=True, hexpand=True)
                         app_list_item.force_show = True
                         self.updates_row_list.append( app_list_item )
                         break
+
+        if upgradable:
+            self.updates_row.set_visible(True)
 
         self.updates_row.append(self.updates_row_list)
         self.installed_apps_list.invalidate_filter()
@@ -104,7 +108,8 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         if self.updates_row_list:
             self.updates_row.remove(self.updates_row_list)
 
-        threading.Thread(target=self.refresh_upgradable_list).run()
+        thread = threading.Thread(target=self.refresh_upgradable_list)
+        thread.start()
 
     def filter_func(self, row: Gtk.ListBoxRow):
         if not getattr(row, 'force_show', False) and row._app.installed_status != InstalledStatus.INSTALLED:
