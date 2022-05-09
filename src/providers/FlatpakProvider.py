@@ -97,7 +97,7 @@ class FlatpakProvider(Provider):
 
         try:
             flatpak.remove(
-                list_element.extra_data['ref'], 
+                self.get_ref(list_element), 
                 list_element.id, 
                 lambda _: after_uninstall(True)
             )

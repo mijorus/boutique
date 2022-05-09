@@ -72,7 +72,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.details_row.prepend(self.icon_slot)
 
         self.title.set_label(cleanhtml(el.name))
-        self.update_installation_status()
+        self.update_installation_status(check_installed=True)
 
         version_label = key_in_dict(el.extra_data, 'version')
         self.version.set_markup( '' if not version_label else f'<small>{version_label}</small>' )
@@ -125,8 +125,8 @@ class AppDetails(Gtk.ScrolledWindow):
     def update_installation_status(self, check_installed=False):
         self.secondary_action_button.set_visible(False)
 
-        if check_installed and not self.provider.is_installed(self.app_list_element):
-            self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
+        if check_installed:
+            self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED if not self.provider.is_installed(self.app_list_element) else InstalledStatus.INSTALLED
 
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
             self.secondary_action_button.set_label('Open')
