@@ -45,8 +45,7 @@ def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=
 
     def run_command(command: str, callback: Callable[[str], None]=None):
         try:
-            log(f'Running {command}')
-            output = sh(command)
+            output = sh(command, hide_err=False, return_stderr=False)
 
             if callback:
                 callback(re.sub(r'\n$', '', output))

@@ -55,8 +55,14 @@ def sectioned_list() -> List[AppsListSection]:
 
     return output
 
+_default_arch = None
 def get_default_aarch() -> str:
-    return sh('flatpak --default-arch')
+    global _default_arch
+
+    if not _default_arch:
+        _defualt_arch = sh('flatpak --default-arch')
+
+    return _default_arch
 
 def get_ref_origin(ref: str) -> str:
     return sh(f'flatpak info {ref} -o')

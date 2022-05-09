@@ -122,9 +122,10 @@ class AppDetails(Gtk.ScrolledWindow):
             self.provider.run(self.app_list_element)
             set_window_cursor('default')
 
-    def update_installation_status(self):
+    def update_installation_status(self, check_installed=False):
         self.secondary_action_button.set_visible(False)
-        if not self.provider.is_installed(self.app_list_element):
+
+        if check_installed and not self.provider.is_installed(self.app_list_element):
             self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
 
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
