@@ -60,7 +60,7 @@ def get_default_aarch() -> str:
     global _default_arch
 
     if not _default_arch:
-        _defualt_arch = sh('flatpak --default-arch')
+        _default_arch = sh('flatpak --default-arch')
 
     return _default_arch
 
