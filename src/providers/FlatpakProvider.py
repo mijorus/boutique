@@ -256,7 +256,7 @@ class FlatpakProvider(Provider):
 
         threading.Thread(target=create_log_expander, args=(expander, )).start()
 
-    def list_upgradable(self) -> List[AppUpdateElement]:
+    def list_updatable(self) -> List[AppUpdateElement]:
         update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
         
         if not '1.\t' in update_output:
@@ -281,3 +281,22 @@ class FlatpakProvider(Provider):
                 output.append( AppUpdateElement(cols[0], update_size))
 
         return output
+
+    def update(self, list_element: AppListElement, callback: Callable):
+        def update_task(list_element: AppListElement, callback: Callable):
+            ref = self.get_ref(list_element)
+            success = False
+
+            try:
+                terminal.sh(['flatpak', 'update', '--user', '--noninteractive', ref])
+                list_element.set_installed_status(InstalledStatus.INSTALLED)
+                success = True
+            except Exception as e:
+                print(e)
+                list_element.set_installed_status(InstalledStatus.ERROR)
+
+            if callback:
+                callback(success)
+
+        list_element.set_installed_status(InstalledStatus.UPDATING)
+        threading.Thread(target=update_task, daemon=True, args=(list_element, callback, )).start()

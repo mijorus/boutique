@@ -88,7 +88,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         upgradable = 0
         for p, provider in providers.items():
-            for upg in provider.list_upgradable():
+            for upg in provider.list_updatable():
                 for row in self.installed_apps_list_rows:
                     if row._app.id == upg.id:
                         upgradable += 1
@@ -102,6 +102,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             self.updates_row.set_visible(True)
 
         self.updates_row.append(self.updates_row_list)
+        self.updates_row_list.connect('row-activated', self.on_activated_row)
         self.installed_apps_list.invalidate_filter()
 
     def refresh_upgradable(self):

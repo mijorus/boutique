@@ -39,5 +39,9 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def list_upgradable(self) -> List[AppUpdateElement]:
+    def list_updatable(self) -> List[AppUpdateElement]:
+        pass
+
+    @abstractmethod
+    def update(self, el: AppListElement, callback: Callable[[None], bool]):
         pass
