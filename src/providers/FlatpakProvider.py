@@ -300,3 +300,6 @@ class FlatpakProvider(Provider):
 
         list_element.set_installed_status(InstalledStatus.UPDATING)
         threading.Thread(target=update_task, daemon=True, args=(list_element, callback, )).start()
+
+    def run(self, el: AppListElement):
+        terminal.threaded_sh(['flatpak', 'run', '--user', el.id])

@@ -67,7 +67,7 @@ class BrowseApps(Gtk.ScrolledWindow):
         spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
         self.search_results.append(spinner)
 
-        self.set_cursor(Gdk.Cursor.new_from_name('wait', None))
+        utils.set_window_cursor('wait')
         result: List[AppListElement] = provider.search(query)
 
         self.search_results.remove(spinner)
@@ -86,4 +86,4 @@ class BrowseApps(Gtk.ScrolledWindow):
                 list_row = AppListBoxItem(app, load_icon_from_network=True, activatable=True, selectable=True, hexpand=True)
                 self.search_results.append(list_row)
 
-        self.set_cursor(Gdk.Cursor.new_from_name('default', None))
+        utils.set_window_cursor('default')

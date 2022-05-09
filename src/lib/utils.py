@@ -2,7 +2,7 @@ import re
 import os
 import requests
 
-from gi.repository import Gtk, Adw, GdkPixbuf, GLib
+from gi.repository import Gtk, Adw, GdkPixbuf, GLib, Gdk
 
 def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     """
@@ -48,3 +48,9 @@ def gtk_image_from_url(url: str, image: Gtk.Image):
     loader.close()
 
     image.set_from_pixbuf(loader.get_pixbuf())
+
+def set_window_cursor(cursor: str):
+    for w in Gtk.Window.list_toplevels():
+        if isinstance(w, Gtk.ApplicationWindow):
+            w.set_cursor(Gdk.Cursor.new_from_name(cursor, None))
+            break

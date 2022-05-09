@@ -38,20 +38,18 @@ def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False) -> s
 
     return re.sub(r'\n$', '', output.stdout)
 
-def threaded_sh(command: str, callback: Callable[[str], None]=None):
-    if not _command_is_allowed(command):
+def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None):
+    to_check = command if isinstance(command, str) else command[0]
+    if not _command_is_allowed(to_check):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
-    
     def run_command(command: str, callback: Callable[[str], None]=None):
         try:
             log(f'Running {command}')
-
-            cmd = f'flatpak-spawn --host {command}'.split(' ')
-            output = subprocess.run(cmd, encoding='utf-8', shell=False, check=True, capture_output=True)
+            output = sh(command)
 
             if callback:
-                callback(re.sub(r'\n$', '', output.stdout))
+                callback(re.sub(r'\n$', '', output))
 
         except subprocess.CalledProcessError as e:
             log(e.stderr)

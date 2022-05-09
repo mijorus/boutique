@@ -1,9 +1,9 @@
 import threading
-from gi.repository import Gtk, GObject, Adw
+from gi.repository import Gtk, GObject, Adw, Gdk
 from .models.AppListElement import AppListElement, InstalledStatus
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
-from .lib.utils import cleanhtml, key_in_dict
+from .lib.utils import cleanhtml, key_in_dict, set_window_cursor
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
@@ -31,10 +31,13 @@ class AppDetails(Gtk.ScrolledWindow):
         title_col.append(self.version)
 
         self.primary_action_button = Gtk.Button(label='Install', valign=Gtk.Align.CENTER)
+        self.secondary_action_button = Gtk.Button(label='', valign=Gtk.Align.CENTER, visible=False)
         self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
+        self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
 
         self.details_row.append(self.icon_slot)
         self.details_row.append(title_col)
+        self.details_row.append(self.secondary_action_button)
         self.details_row.append(self.primary_action_button)
 
         # 2nd row
@@ -113,11 +116,21 @@ class AppDetails(Gtk.ScrolledWindow):
                 lambda result: self.update_installation_status()
             )
 
+    def on_secondary_action_button_clicked(self, button: Gtk.Button):
+        if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
+            set_window_cursor('wait')
+            self.provider.run(self.app_list_element)
+            set_window_cursor('default')
+
     def update_installation_status(self):
+        self.secondary_action_button.set_visible(False)
         if not self.provider.is_installed(self.app_list_element):
             self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
 
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
+            self.secondary_action_button.set_label('Open')
+            self.secondary_action_button.set_visible(True)
+
             self.primary_action_button.set_label('Uninstall')
             self.primary_action_button.set_css_classes(['destructive-action'])
 

@@ -45,3 +45,7 @@ class Provider(ABC):
     @abstractmethod
     def update(self, el: AppListElement, callback: Callable[[None], bool]):
         pass
+
+    @abstractmethod
+    def run(self, el: AppListElement):
+        pass
