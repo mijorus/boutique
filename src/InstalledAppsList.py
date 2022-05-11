@@ -55,6 +55,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
 
+        self.upgradable_cache = {}
         self.refresh_upgradable()
         self.set_child(clamp)
 
@@ -100,15 +101,20 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             if only is not None and p != only:
                 continue
 
-            for upg in provider.list_updatable():
-                for row in self.installed_apps_list_rows:
+            self.upgradable_cache[p] = provider.list_updatable() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
+
+            for row in self.installed_apps_list_rows:
+                row_is_upgrdble = False
+                for upg in self.upgradable_cache[p]:
                     if row._app.id == upg.id:
                         upgradable += 1
-                        row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
+                        row_is_upgrdble = True
                         app_list_item = AppListBoxItem(row._app, activatable=True, selectable=True, hexpand=True)
                         app_list_item.force_show = True
                         self.updates_row_list.append( app_list_item )
                         break
+
+                row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
 
         if upgradable:
             self.updates_row.set_visible(True)
@@ -138,18 +144,23 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         return visible
 
     def after_update_all(self, result: bool, prov: str):
+        self.upgradable_cache.clear()
+
         if result:
             self.refresh_upgradable(only=prov)
+
+            if self.updates_row_list and prov == [*providers.keys()][-1]:
+                self.updates_row_list.set_opacity(1)
+                self.update_all_btn.set_label('Update all')
+                self.update_all_btn.set_sensitive(True)
 
     def on_update_all_btn_clicked(self, widget: Gtk.Button):
         if not self.updates_row_list:
             return
 
         self.updates_row_list.set_opacity(0.5)
+        self.update_all_btn.set_sensitive(False)
         self.update_all_btn.set_label('Updating...')
 
         for p, provider in providers.items():
             provider.update_all(self.after_update_all)
-
-        self.updates_row_list.set_opacity(1)
-        self.update_all_btn.set_label('Update all')

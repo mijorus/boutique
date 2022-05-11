@@ -47,7 +47,7 @@ class Provider(ABC):
         pass
     
     @abstractmethod
-    def update_all(self, callback: Callable[[bool, str], None]):
+    def update_all(self, callback: Callable[[bool, str, bool], None]):
         pass
 
     @abstractmethod
