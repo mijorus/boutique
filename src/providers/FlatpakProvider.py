@@ -268,6 +268,7 @@ class FlatpakProvider(Provider):
         start_pattern = re.compile(r'^([0-9]+\.)')
         output = []
         for row in update_section.split('\n'):
+            row = row.strip()
             if not re.match(start_pattern, row):
                 break
             else:
