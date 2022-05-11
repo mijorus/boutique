@@ -36,7 +36,7 @@ def full_list() -> List:
     return output
 
 def apps_list() -> List:
-    output_list: str = sh(f'flatpak list --app --columns={",".join(_columns_query)}')
+    output_list: str = sh(f'flatpak list --app --user --columns={",".join(_columns_query)}')
 
     output: List = _parse_output(output_list, _columns_query)
     return output
