@@ -35,7 +35,15 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=False)
         self.updates_row_list: Optional[Gtk.ListBox] = None
-        self.updates_row.append( Gtk.Label(label='Available updates', css_classes=['title-4'], margin_bottom=5, halign=Gtk.Align.START) )
+
+        updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER, margin_bottom=5)
+        updates_title_row.append( Gtk.Label(label='Available updates', css_classes=['title-4'], hexpand=True, halign=Gtk.Align.START) )
+        
+        self.update_all_btn =  Gtk.Button(label='Update all', css_classes=['suggested-action'], valign=Gtk.Align.CENTER) 
+        self.update_all_btn.connect('clicked', self.on_update_all_btn_clicked)
+
+        updates_title_row.append(self.update_all_btn)
+        self.updates_row.append(updates_title_row)
 
         title_row = Gtk.Box(margin_bottom=5)
         title_row.append( Gtk.Label(label='Installed applications', css_classes=['title-2']) )
@@ -82,13 +90,16 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.filter_query = widget.get_text()
         self.installed_apps_list.invalidate_filter()
 
-    def refresh_upgradable_list(self):
+    def refresh_upgradable_list(self, only: Optional[str]=None):
         self.updates_row.set_visible(False)
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
         self.updates_row_list.set_filter_func(self.filter_func)
 
         upgradable = 0
         for p, provider in providers.items():
+            if only is not None and p != only:
+                continue
+
             for upg in provider.list_updatable():
                 for row in self.installed_apps_list_rows:
                     if row._app.id == upg.id:
@@ -106,11 +117,11 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.updates_row_list.connect('row-activated', self.on_activated_row)
         self.installed_apps_list.invalidate_filter()
 
-    def refresh_upgradable(self):
+    def refresh_upgradable(self, only: Optional[str]=None):
         if self.updates_row_list:
             self.updates_row.remove(self.updates_row_list)
 
-        thread = threading.Thread(target=self.refresh_upgradable_list)
+        thread = threading.Thread(target=self.refresh_upgradable_list, args=(only, ))
         thread.start()
 
     def filter_func(self, row: Gtk.ListBoxRow):
@@ -125,3 +136,20 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         row.set_visible(visible)
 
         return visible
+
+    def after_update_all(self, result: bool, prov: str):
+        if result:
+            self.refresh_upgradable(only=prov)
+
+    def on_update_all_btn_clicked(self, widget: Gtk.Button):
+        if not self.updates_row_list:
+            return
+
+        self.updates_row_list.set_opacity(0.5)
+        self.update_all_btn.set_label('Updating...')
+
+        for p, provider in providers.items():
+            provider.update_all(self.after_update_all)
+
+        self.updates_row_list.set_opacity(1)
+        self.update_all_btn.set_label('Update all')

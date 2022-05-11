@@ -304,3 +304,18 @@ class FlatpakProvider(Provider):
 
     def run(self, el: AppListElement):
         terminal.threaded_sh(['flatpak', 'run', '--user', el.id])
+
+    def update_all(self, callback: Callable):
+        def update_task(callback):
+            success = False
+
+            try:
+                terminal.sh(['flatpak', 'update', '--user', '-y', '--noninteractive'])
+                success = True
+            except Exception as e:
+                print(e)
+
+            if callback:
+                callback(success, 'flatpak')
+
+        threading.Thread(target=update_task, daemon=True, args=(callback, )).start()

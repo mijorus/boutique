@@ -43,7 +43,11 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def update(self, el: AppListElement, callback: Callable[[None], bool]):
+    def update(self, el: AppListElement, callback: Callable[[bool], None]):
+        pass
+    
+    @abstractmethod
+    def update_all(self, callback: Callable[[bool, str], None]):
         pass
 
     @abstractmethod
