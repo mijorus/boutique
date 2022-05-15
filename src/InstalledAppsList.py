@@ -24,7 +24,8 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.installed_apps_list_slot = Gtk.Box()
         self.installed_apps_list: Optional[Gtk.ListBox] = None
-        self.installed_apps_list_rows: List[Gtk.ListBox] = []
+        self.installed_apps_list_rows: List[Gtk.ListBoxRow] = []
+        self.no_apps_found_row = Gtk.ListBoxRow(child=Gtk.Label(label="No apps found", css_classes=['app-listbox-item']), hexpand=True)
 
         # Create the filter search bar
         self.filter_query: str = ''
@@ -33,7 +34,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.refresh_list()
 
-        self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=False)
+        self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
         self.updates_row_list: Optional[Gtk.ListBox] = None
 
         updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER, margin_bottom=5)
@@ -79,29 +80,54 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 self.installed_apps_list_rows.append(list_row)
                 self.installed_apps_list.append(list_row)
 
+        self.installed_apps_list.append(self.no_apps_found_row)
         self.installed_apps_list_slot.append(self.installed_apps_list)
-        self.installed_apps_list.set_filter_func(self.filter_func)
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
         set_window_cursor('default')
 
     def trigger_filter_list(self, widget):
+        """ Implements a custom filter function"""
         if not self.installed_apps_list:
             return
 
         self.filter_query = widget.get_text()
-        self.installed_apps_list.invalidate_filter()
+        # self.installed_apps_list.invalidate_filter()
+
+        for row in self.installed_apps_list_rows:
+            if not getattr(row, 'force_show', False) and row._app.installed_status != InstalledStatus.INSTALLED:
+                row.set_visible(False)
+                continue
+
+            if not len(self.filter_query):
+                row.set_visible(True)
+                continue
+
+            visible = self.filter_query.lower().replace(' ', '') in row._app.name.lower()
+            row.set_visible(visible)
+            continue
+
+        self.no_apps_found_row.set_visible(True)
+        for row in self.installed_apps_list_rows:
+            if row.get_visible():
+                self.no_apps_found_row.set_visible(False)
+                break
+
 
     def refresh_upgradable_list(self, only: Optional[str]=None):
-        self.updates_row.set_visible(False)
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
-        self.updates_row_list.set_filter_func(self.filter_func)
 
         upgradable = 0
+
+        self.updates_row.append(self.updates_row_list)
+        spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
+        self.updates_row_list.append(spinner)
+
         for p, provider in providers.items():
             if only is not None and p != only:
                 continue
 
             self.upgradable_cache[p] = provider.list_updatable() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
+            self.updates_row_list.remove(spinner)
 
             for row in self.installed_apps_list_rows:
                 row_is_upgrdble = False
@@ -116,12 +142,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
                 row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
 
-        if upgradable:
-            self.updates_row.set_visible(True)
-
-        self.updates_row.append(self.updates_row_list)
+        self.updates_row.set_visible(upgradable > 0)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
-        self.installed_apps_list.invalidate_filter()
+        # self.installed_apps_list.invalidate_filter()
+        self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only: Optional[str]=None):
         if self.updates_row_list:
@@ -129,19 +153,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         thread = threading.Thread(target=self.refresh_upgradable_list, args=(only, ))
         thread.start()
-
-    def filter_func(self, row: Gtk.ListBoxRow):
-        if not getattr(row, 'force_show', False) and row._app.installed_status != InstalledStatus.INSTALLED:
-            return False
-
-        if not len(self.filter_query):
-            row.set_visible(True)
-            return True
-
-        visible = self.filter_query.lower().replace(' ', '') in row._app.name.lower()
-        row.set_visible(visible)
-
-        return visible
 
     def after_update_all(self, result: bool, prov: str):
         self.upgradable_cache.clear()

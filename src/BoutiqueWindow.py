@@ -48,21 +48,18 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
         # Create the "stack" widget for the "installed apps" view
         self.installed_stack = Gtk.Stack()
+        self.app_details = AppDetails()
 
         self.installed_apps_list = InstalledAppsList()
         self.installed_stack.add_child(self.installed_apps_list)
 
-        self.app_details = AppDetails()
-        # self.installed_stack.add_child(self.app_details)
         self.installed_stack.set_visible_child(self.installed_apps_list)
 
         # Create the "stack" widget for the browse view
         self.browse_stack = Gtk.Stack()
         self.browse_apps = BrowseApps()
-        self.browsed_app_details = AppDetails()
 
         self.browse_stack.add_child(self.browse_apps)
-        # self.browse_stack.add_child(self.browsed_app_details)
         
         # Add content to the main_stack
         utils.add_page_to_adw_stack(self.app_lists_stack, self.installed_stack, 'installed', 'Installed', 'computer-symbolic' )
