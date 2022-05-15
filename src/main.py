@@ -24,6 +24,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, Gio, Adw, Gdk
 from .BoutiqueWindow import BoutiqueWindow
 from .AboutDialog import AboutDialog
+from .providers.providers_list import providers
 
 
 class BoutiqueApplication(Adw.Application):
@@ -31,7 +32,7 @@ class BoutiqueApplication(Adw.Application):
 
     def __init__(self):
         super().__init__(application_id='it.mijorus.boutique',
-                         flags=Gio.ApplicationFlags.FLAGS_NONE)
+                         flags=Gio.ApplicationFlags.HANDLES_OPEN)
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
         self.create_action('preferences', self.on_preferences_action)
@@ -55,6 +56,14 @@ class BoutiqueApplication(Adw.Application):
             win = BoutiqueWindow(application=self)
 
         win.present()
+
+    def do_open(self, files: list[Gio.File], n_files: int, _):
+        self.do_activate()
+
+        for f in files:
+            for p, provider in providers.items():
+                if provider.can_install_file(f):
+                    provider.install_file(f, lambda res: res)
 
     def on_about_action(self, widget, _):
         """Callback for the app.about action."""
