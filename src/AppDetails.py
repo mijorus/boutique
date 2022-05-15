@@ -1,6 +1,7 @@
 import threading
-from gi.repository import Gtk, GObject, Adw, Gdk
+from gi.repository import Gtk, GObject, Adw, Gdk, Gio
 from .models.AppListElement import AppListElement, InstalledStatus
+from .models.Provider import Provider
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
 from .lib.utils import cleanhtml, key_in_dict, set_window_cursor
@@ -85,6 +86,11 @@ class AppDetails(Gtk.ScrolledWindow):
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
+
+    def set_from_local_file(self, file: Gio.File):
+        for p, provider in providers.items():
+            if provider.can_install_file(file):
+                pass # @todo
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:

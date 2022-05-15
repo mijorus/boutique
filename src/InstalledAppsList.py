@@ -112,7 +112,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 self.no_apps_found_row.set_visible(False)
                 break
 
-
     def refresh_upgradable_list(self, only: Optional[str]=None):
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 

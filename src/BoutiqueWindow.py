@@ -86,7 +86,6 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         """Show app details"""
 
         self.app_details.set_app_list_element(list_element)
-        # self.left_button.set_visible(True)
         self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.container_stack.set_visible_child(self.app_details)
 
@@ -94,15 +93,13 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         """Show details for an app from global search"""
 
         self.app_details.set_app_list_element(list_element, load_from_network=True)
-        # self.left_button.set_visible(True)
         self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.container_stack.set_visible_child(self.app_details)
 
     def on_selected_local_file(self, file: Gio.File):
-        pass
-        # for p, provider in providers.items():
-        #     if provider.can_install_file(f):
-        #         provider.install_file(f, lambda res: res)
+        self.app_details.set_from_local_file(file)
+        self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
+        self.container_stack.set_visible_child(self.app_details)
 
     def on_show_installed_list(self, source: Gtk.Widget=None, _=None):
         self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
