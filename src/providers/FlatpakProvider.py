@@ -12,7 +12,7 @@ from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union
-from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 
 class FlatpakProvider(Provider):
     def __init__(self):
@@ -319,3 +319,15 @@ class FlatpakProvider(Provider):
                 callback(success, 'flatpak')
 
         threading.Thread(target=update_task, daemon=True, args=(callback, )).start()
+
+    def can_install_file(self, file: Gio.File):
+        path: str = file.get_path()
+        return path.endswith('flatpakref')
+
+    def install_file(self, file, callback):
+        def install_ref(path):
+            print('installing ', path)
+            terminal.sh(['flatpak', 'install', '--from', path, '--noninteractive', '--user'])
+            print('Installed!')
+
+        threading.Thread(target=install_ref, args=(file.get_path(), ), daemon=True).start()

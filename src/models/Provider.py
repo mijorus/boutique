@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Callable
 from .AppListElement import AppListElement
 from .Models import AppUpdateElement
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio
 
 class Provider(ABC):
 
@@ -53,3 +53,12 @@ class Provider(ABC):
     @abstractmethod
     def run(self, el: AppListElement):
         pass
+
+    @abstractmethod
+    def can_install_file(self, filename: Gio.File) -> bool:
+        pass
+
+    @abstractmethod
+    def install_file(self, filename: Gio.File, callback: Callable[[bool], None]) -> bool:
+        pass
+
