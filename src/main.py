@@ -61,9 +61,9 @@ class BoutiqueApplication(Adw.Application):
         self.do_activate()
 
         for f in files:
-            for p, provider in providers.items():
-                if provider.can_install_file(f):
-                    provider.install_file(f, lambda res: res)
+            if isinstance(self.props.active_window, BoutiqueWindow):
+                self.props.active_window.on_selected_local_file(f)
+                break
 
     def on_about_action(self, widget, _):
         """Callback for the app.about action."""

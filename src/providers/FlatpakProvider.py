@@ -11,7 +11,7 @@ from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
-from typing import List, Callable, Union
+from typing import List, Callable, Union, Dict
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 
 class FlatpakProvider(Provider):
@@ -331,3 +331,16 @@ class FlatpakProvider(Provider):
             print('Installed!')
 
         threading.Thread(target=install_ref, args=(file.get_path(), ), daemon=True).start()
+
+    def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
+        res = file.load_contents(None)
+        contents: str = res.contents.decode('utf-8')
+
+        props: Dict[str, str] = {}
+        for line in contents.split('\n'):
+            keyval = line.split('=', maxsplit=1)
+            props[ keyval[0].lower() ] = keyval[1]
+
+        # @todo
+        installed_status = InstalledStatus.INSTALLED if flatpak.is_installed(props['name']) else InstalledStatus.NOT_INSTALLED
+        list_element = AppListElement(props['name'], props['title'], props['name'], 'flathub', installed_status)

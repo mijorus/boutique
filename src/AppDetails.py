@@ -90,7 +90,8 @@ class AppDetails(Gtk.ScrolledWindow):
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
             if provider.can_install_file(file):
-                pass # @todo
+                provider.create_list_element_from_file(file)
+                break
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:

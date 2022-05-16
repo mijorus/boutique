@@ -62,3 +62,6 @@ class Provider(ABC):
     def install_file(self, filename: Gio.File, callback: Callable[[bool], None]) -> bool:
         pass
 
+    @abstractmethod
+    def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
+        pass
