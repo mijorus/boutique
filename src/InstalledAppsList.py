@@ -128,7 +128,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             if only is not None and p != only:
                 continue
 
-            self.upgradable_cache[p] = provider.list_updatable() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
+            self.upgradable_cache[p] = provider.list_updateable() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
             self.updates_row_list.remove(spinner)
 
             for row in self.installed_apps_list_rows:

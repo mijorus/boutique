@@ -1,13 +1,14 @@
 import re
 import urllib
 import requests
-from typing import List, Callable, Dict, Union, Literal
+from typing import List, Callable, Dict, Union, Literal, Optional
 from .terminal import sh, threaded_sh, sanitize
 from ..models.AppsListSection import AppsListSection
 from ..models.Models import FlatpakHistoryElement
 from .utils import key_in_dict, log
 
 API_BASEURL = 'https://flathub.org/api/v2'
+FLATHUB_REPO_URL = 'https://dl.flathub.org/repo/'
 _columns_query: List[str] = ['name', 'description', 'application', 'version', 'branch', 'arch', 'runtime', 'origin', 'installation', 'ref', 'active', 'latest', 'size']
 
 def _parse_output(command_output: str, headers: List[str], to_sort=True) -> List[Dict]:
@@ -141,3 +142,15 @@ def get_app_history(ref: str, remote: str):
             output.append(h_el)
 
     return output
+
+def list_remotes() -> List[Dict]:
+    headers = [ 'name', 'title', 'url', 'collection', 'subset', 'filter', 'priority', 'options', 'comment', 'description', 'homepage', 'icon', ]
+    remotes = sh(['flatpak', 'remotes', ('--columns=' + ','.join(headers))])
+    return _parse_output(remotes, headers)
+
+def find_remote_from_url(url: str) -> Optional[str]:
+    for r in list_remotes():
+        if r['url'] == url:
+            return r['name']
+
+    return None

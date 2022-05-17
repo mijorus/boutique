@@ -43,7 +43,6 @@ class FlatpakProvider(Provider):
         return output
 
     def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False):
-
         def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: Union[dict, bool]=False):
             if not remote or 'url' not in remote:
                 return
@@ -256,7 +255,7 @@ class FlatpakProvider(Provider):
 
         threading.Thread(target=create_log_expander, args=(expander, )).start()
 
-    def list_updatable(self) -> List[AppUpdateElement]:
+    def list_updateable(self) -> List[AppUpdateElement]:
         update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
         
         if not '1.\t' in update_output:
@@ -338,9 +337,31 @@ class FlatpakProvider(Provider):
 
         props: Dict[str, str] = {}
         for line in contents.split('\n'):
+            if not '=' in line: 
+                continue
+
             keyval = line.split('=', maxsplit=1)
             props[ keyval[0].lower() ] = keyval[1]
 
         # @todo
         installed_status = InstalledStatus.INSTALLED if flatpak.is_installed(props['name']) else InstalledStatus.NOT_INSTALLED
-        list_element = AppListElement(props['name'], props['title'], props['name'], 'flathub', installed_status)
+        
+        name = props['name']
+        desc = props['title']
+
+        if props['url'] == flatpak.FLATHUB_REPO_URL:
+            log('qui')
+            try:
+                appstream = flatpak.get_appstream(name, 'flathub')
+                if 'name' in appstream:
+                    name = appstream['name']
+            except:
+                pass
+
+        list_element = AppListElement(name, desc, props['name'], 'flatpak', installed_status, 
+            remotes=[ flatpak.find_remote_from_url(props['url']) ],
+            branch=props['branch'],
+            origin=flatpak.find_remote_from_url(props['url']),
+        )
+
+        return list_element

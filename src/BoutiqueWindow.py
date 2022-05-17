@@ -92,7 +92,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
     def on_selected_browsed_app(self, source: Gtk.Widget, list_element: AppListElement):
         """Show details for an app from global search"""
 
-        self.app_details.set_app_list_element(list_element, load_from_network=True)
+        self.app_details.set_app_list_element(list_element, load_icon_from_network=True)
         self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.container_stack.set_visible_child(self.app_details)
 

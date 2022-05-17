@@ -60,12 +60,13 @@ class AppDetails(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-    def set_app_list_element(self, el: AppListElement, load_from_network=False):
+    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False):
         self.app_list_element = el
+        self.local_file = local_file
 
         self.provider = providers[el.provider]
 
-        icon = self.provider.get_icon(el, load_from_network=load_from_network)
+        icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
         icon.set_pixel_size(45)
         
         self.details_row.remove(self.icon_slot)
@@ -90,7 +91,8 @@ class AppDetails(Gtk.ScrolledWindow):
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
             if provider.can_install_file(file):
-                provider.create_list_element_from_file(file)
+                list_element = provider.create_list_element_from_file(file)
+                self.set_app_list_element(list_element, True, True)
                 break
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):
