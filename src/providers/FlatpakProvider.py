@@ -275,10 +275,10 @@ class FlatpakProvider(Provider):
                 cols = []
                 for i, col in enumerate(row.split('\t')):
                     col = col.strip()
-                    if not re.match(start_pattern, col) and len(col) > 0:
+                    if (i > 0) and len(col) > 0:
                         cols.append(col)
 
-                update_size = ''.join( re.findall(r'([0-9]|,)',cols[4], flags=re.A) )
+                update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) )
                 output.append( AppUpdateElement(cols[0], update_size))
 
         return output
