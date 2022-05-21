@@ -40,7 +40,7 @@ def cleanhtml(raw_html: str) -> str:
     return cleantext
 
 def gtk_image_from_url(url: str, image: Gtk.Image):
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     response.raise_for_status()
 
     loader = GdkPixbuf.PixbufLoader()
