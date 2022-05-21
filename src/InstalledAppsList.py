@@ -80,6 +80,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
             for i in installed:
                 list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)
+                list_row.load_icon(from_network=False)
                 self.installed_apps_list_rows.append(list_row)
                 self.installed_apps_list.append(list_row)
 

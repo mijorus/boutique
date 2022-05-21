@@ -16,9 +16,8 @@ class AppListBoxItem(Gtk.ListBoxRow):
         col = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         col.set_css_classes(['app-listbox-item'])
 
-        image = providers[list_element.provider].get_icon(list_element, load_from_network=load_icon_from_network)
-        image.set_pixel_size(45)
-        col.append(image)
+        self.image_container = Gtk.Box()
+        col.append(self.image_container)
 
         app_details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
         app_details_box.append( 
@@ -35,3 +34,8 @@ class AppListBoxItem(Gtk.ListBoxRow):
         
         col.append(app_details_box)
         self.set_child(col)
+
+    def load_icon(self, from_network: bool=False):
+        image = providers[self._app.provider].get_icon(self._app, load_from_network=from_network)
+        image.set_pixel_size(45)
+        self.image_container.append( image )

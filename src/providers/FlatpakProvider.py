@@ -44,7 +44,7 @@ class FlatpakProvider(Provider):
 
     def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False):
         def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: Union[dict, bool]=False):
-            if not remote or 'url' not in remote:
+            if (not remote) or ('url' not in remote):
                 return
 
             url = re.sub(r'\/$', '', remote['url'])
