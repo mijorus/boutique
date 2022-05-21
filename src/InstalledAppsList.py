@@ -140,6 +140,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                         row_is_upgrdble = True
                         app_list_item = AppListBoxItem(row._app, activatable=True, selectable=True, hexpand=True)
                         app_list_item.force_show = True
+                        app_list_item.load_icon()
                         self.updates_row_list.append( app_list_item )
                         break
 

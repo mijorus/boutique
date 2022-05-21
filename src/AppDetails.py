@@ -31,7 +31,9 @@ class AppDetails(Gtk.ScrolledWindow):
         title_col.append(self.app_id)
         title_col.append(self.version)
 
-        self.primary_action_button = Gtk.Button(label='Install', valign=Gtk.Align.CENTER)
+        self.primary_action_button = Adw.SplitButton(label='Install', valign=Gtk.Align.CENTER)
+        self.primary_action_button.get_last_child().set_visible(False)
+
         self.secondary_action_button = Gtk.Button(label='', valign=Gtk.Align.CENTER, visible=False)
         self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
         self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
@@ -132,10 +134,16 @@ class AppDetails(Gtk.ScrolledWindow):
             set_window_cursor('default')
 
     def update_installation_status(self, check_installed=False):
+        self.primary_action_button.set_menu_model(None)
+        self.primary_action_button.get_last_child().set_visible(False)
+
         self.secondary_action_button.set_visible(False)
 
         if check_installed:
-            self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED if not self.provider.is_installed(self.app_list_element) else InstalledStatus.INSTALLED
+            if not self.provider.is_installed(self.app_list_element):
+                self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
+            else:
+                self.app_list_element.installed_status = InstalledStatus.INSTALLED
 
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
             self.secondary_action_button.set_label('Open')
@@ -155,6 +163,19 @@ class AppDetails(Gtk.ScrolledWindow):
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
             self.primary_action_button.set_label('Install')
             self.primary_action_button.set_css_classes(['suggested-action'])
+
+            if 'remotes' in self.app_list_element.extra_data and len(self.app_list_element.extra_data['remotes']) > 1:
+                gmenu = Gio.Menu()
+                i = 0
+                for remote, title in self.app_list_element.extra_data['remotes_map'].items():
+                    if i == 0: self.primary_action_button.set_label('Install from ' + title)
+                    gmenu.append('Install from ' + title, None)
+                    i +=1
+
+                self.primary_action_button.set_menu_model(gmenu)
+                self.primary_action_button.get_last_child().set_visible(True)
+            else:
+                self.primary_action_button.set_label('Install')
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
             self.primary_action_button.set_label('Update')

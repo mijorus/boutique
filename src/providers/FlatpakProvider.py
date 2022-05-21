@@ -112,7 +112,7 @@ class FlatpakProvider(Provider):
     def install(self, list_element: AppListElement, callback: Callable[[bool], None]=None):
         def install_thread(list_element: AppListElement, callback: Callable):
             try:
-                ref = f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
+                ref = self.get_ref(list_element)
                 list_element.extra_data['ref'] = ref
                 flatpak.install(list_element.extra_data['origin'], ref)
                 list_element.set_installed_status(InstalledStatus.INSTALLED)
@@ -158,6 +158,14 @@ class FlatpakProvider(Provider):
                     installed_status = InstalledStatus.INSTALLED
                     break
 
+            fk_remotes = flatpak.remotes_list()
+            app_remotes = app['remotes'].split(',')
+            remotes_map = {}
+
+            for r in app_remotes:
+                if (r in fk_remotes):
+                    remotes_map[r] = fk_remotes[r]['title']
+
             output.append(
                 AppListElement(
                     ( app['name'] ), 
@@ -168,8 +176,9 @@ class FlatpakProvider(Provider):
 
                     version=app['version'],
                     branch=app['branch'],
-                    remotes=app['remotes'].split(','),
-                    origin=app['remotes'].split(',')[0],
+                    remotes=app_remotes,
+                    remotes_map=remotes_map,
+                    origin=app_remotes[0],
                 )
             )
 
@@ -199,12 +208,13 @@ class FlatpakProvider(Provider):
             source_row.append( Gtk.Label(label='Available from:', css_classes=['heading'], halign=Gtk.Align.START))
             
             for r in element_remotes:
-                if (r in remotes) and 'homepage' in remotes[r]:
-                    source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START)
-                    source_heading.set_markup(f"""<a href="{remotes[r]['homepage']}">{remotes[r]['title']}</a>""")
-                    source_row.append(source_heading)
-                else:
-                    source_row.append(Gtk.Label( label=f"""{remotes['origin']['title']}""", halign=Gtk.Align.START))
+                if (r in remotes):
+                    if 'homepage' in remotes[r]:
+                        source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START)
+                        source_heading.set_markup(f"""<a href="{remotes[r]['homepage']}">{remotes[r]['title']}</a>""")
+                        source_row.append(source_heading)
+                    else:
+                        source_row.append(Gtk.Label( label=f"""{remotes[r]['title']}""", halign=Gtk.Align.START))
 
             widget.append(source_row)
 
