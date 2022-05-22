@@ -42,7 +42,7 @@ class FlatpakProvider(Provider):
 
         return output
 
-    def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False):
+    def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False) -> Gtk.Image:
         def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: Union[dict, bool]=False):
             if (not remote) or ('url' not in remote):
                 return
@@ -139,7 +139,8 @@ class FlatpakProvider(Provider):
             'org.gtk.Gtk3theme',
             'org.kde.PlatformTheme',
             'org.kde.WaylandDecoration',
-            'org.kde.KStyle'
+            'org.kde.KStyle',
+            'org.videolan.VLC.Plugin'
         ]
 
         for app in result[0:100]:
@@ -185,7 +186,12 @@ class FlatpakProvider(Provider):
         return output
 
     def get_long_description(self, el: AppListElement) -> str:
-        appstream = flatpak.get_appstream(el.id, key_in_dict(el.extra_data, 'origin'))
+        from_remote = key_in_dict(el.extra_data, 'origin')
+        
+        if ('remotes' in el.extra_data and 'flathub' in el.extra_data['remotes']):
+            from_remote = 'flathub'
+
+        appstream = flatpak.get_appstream(el.id, from_remote)
 
         output = ''
         if key_in_dict(appstream, 'description'):
@@ -195,6 +201,16 @@ class FlatpakProvider(Provider):
 
     def load_extra_data_in_appdetails(self, widget, list_element: AppListElement):
         remotes = flatpak.remotes_list()
+
+        def get_remote_link(r: str, **kwargs) -> Gtk.Label:
+            if (r in remotes):
+                if 'homepage' in remotes[r]:
+                    source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START, **kwargs)
+                    source_heading.set_markup(f"""<a href="{remotes[r]['homepage']}">{remotes[r]['title']}</a>""")
+                    return source_heading
+                else:
+                    return Gtk.Label( label=f"""{remotes[r]['title']}""", halign=Gtk.Align.START, **kwargs)
+
         if 'origin' in list_element.extra_data:
 
             element_remotes: List[str] = []
@@ -205,16 +221,14 @@ class FlatpakProvider(Provider):
             
 
             source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
+
+            if (list_element.installed_status == InstalledStatus.INSTALLED) and (len(element_remotes) > 1):
+                source_row.append( Gtk.Label(label='Installed from:', css_classes=['heading'], halign=Gtk.Align.START) )
+                source_row.append( get_remote_link(list_element.extra_data['origin'], margin_bottom=20) )
+
             source_row.append( Gtk.Label(label='Available from:', css_classes=['heading'], halign=Gtk.Align.START))
-            
             for r in element_remotes:
-                if (r in remotes):
-                    if 'homepage' in remotes[r]:
-                        source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START)
-                        source_heading.set_markup(f"""<a href="{remotes[r]['homepage']}">{remotes[r]['title']}</a>""")
-                        source_row.append(source_heading)
-                    else:
-                        source_row.append(Gtk.Label( label=f"""{remotes[r]['title']}""", halign=Gtk.Align.START))
+               source_row.append( get_remote_link(r) )
 
             widget.append(source_row)
 
@@ -375,3 +389,11 @@ class FlatpakProvider(Provider):
         )
 
         return list_element
+
+    def get_app_sources(self, list_element):
+        if 'remotes_map' in list_element.extra_data and len(list_element.extra_data['remotes_map']) > 1:
+            return list_element.extra_data['remotes_map']
+        elif 'origin' in list_element.extra_data:
+            return { list_element.extra_data['origin']: list_element.extra_data['origin'] }
+        else:
+            return {}

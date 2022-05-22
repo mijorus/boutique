@@ -164,16 +164,19 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_label('Install')
             self.primary_action_button.set_css_classes(['suggested-action'])
 
-            if 'remotes' in self.app_list_element.extra_data and len(self.app_list_element.extra_data['remotes']) > 1:
+            app_sources = self.provider.get_app_sources(self.app_list_element)
+            if len( list(app_sources.items()) ) > 1:
                 gmenu = Gio.Menu()
                 i = 0
-                for remote, title in self.app_list_element.extra_data['remotes_map'].items():
+
+                for remote, title in app_sources.items():
                     if i == 0: self.primary_action_button.set_label('Install from ' + title)
                     gmenu.append('Install from ' + title, None)
                     i +=1
 
                 self.primary_action_button.set_menu_model(gmenu)
                 self.primary_action_button.get_last_child().set_visible(True)
+
             else:
                 self.primary_action_button.set_label('Install')
 

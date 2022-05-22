@@ -93,18 +93,22 @@ class BrowseApps(Gtk.ScrolledWindow):
             self.search_results.append(list_row)
 
         else:
-            list_rows = []
+            search_results_rows = []
             for i, app in enumerate(result):
                 list_row = AppListBoxItem(app, activatable=True, selectable=True, hexpand=True, visible=False)
                 self.search_results.append(list_row)
+                search_results_rows.append(list_row)
 
-                list_row.load_icon(from_network=True)
-                list_rows.append(list_row)
-
-            for r in list_rows:
+            for r in search_results_rows:
                 r.set_visible(True)
+                r.load_icon(from_network=True)
+
+                r.image_container.queue_resize()
+                r.queue_resize()
 
         self.search_results.remove(spinner)
+
+        self.queue_resize()
         self.search_entry.set_editable(True)
 
         utils.set_window_cursor('default')

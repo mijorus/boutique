@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable
+from typing import List, Callable, Dict
 from .AppListElement import AppListElement
 from .Models import AppUpdateElement
 from gi.repository import Gtk, Gio
@@ -64,4 +64,8 @@ class Provider(ABC):
 
     @abstractmethod
     def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
+        pass
+
+    @abstractmethod
+    def get_app_sources(self, list_element: AppListElement) -> Dict[str, str]:
         pass
