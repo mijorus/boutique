@@ -56,7 +56,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
 
-        self.upgradable_cache = {}
+        self.upgradable_cache: Dict[str, AppUpdateElement] = {}
         self.refresh_upgradable()
         self.set_child(clamp)
 
@@ -80,6 +80,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
             for i in installed:
                 list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)
+                
+                if 'version' in i.extra_data:
+                    list_row.set_update_version(i.extra_data['version'])
+
                 list_row.load_icon(from_network=False)
                 self.installed_apps_list_rows.append(list_row)
                 self.installed_apps_list.append(list_row)
@@ -140,6 +144,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                         row_is_upgrdble = True
                         app_list_item = AppListBoxItem(row._app, activatable=True, selectable=True, hexpand=True)
                         app_list_item.force_show = True
+                        
+                        if upg.to_version and ('version' in row._app.extra_data):
+                            app_list_item.set_update_version(f'{row._app.extra_data["version"]} > {upg.to_version}')
+
                         app_list_item.load_icon()
                         self.updates_row_list.append( app_list_item )
                         break

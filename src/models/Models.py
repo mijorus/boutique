@@ -8,9 +8,10 @@ class FlatpakHistoryElement():
         self.date = date
 
 class AppUpdateElement():
-    def __init__(self, app_id: str, size: Optional[str], **kwargs):
+    def __init__(self, app_id: str, size: Optional[str], to_verison: Optional[str], **kwargs):
         self.id: str = app_id
         self.size: Optional[str] = size
+        self.to_version: Optional[str] = to_verison
         self.extra_data: dict = {}
 
         for k, v in kwargs.items():

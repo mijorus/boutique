@@ -11,9 +11,10 @@ from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
-from typing import List, Callable, Union, Dict
+from typing import List, Callable, Union, Dict, Optional
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 
+remote_ls_cache: List = []
 class FlatpakProvider(Provider):
     def __init__(self):
         pass
@@ -280,6 +281,11 @@ class FlatpakProvider(Provider):
         threading.Thread(target=create_log_expander, args=(expander, )).start()
 
     def list_updateable(self) -> List[AppUpdateElement]:
+        if not remote_ls_cache:
+            h = ['application', 'version', 'origin']
+            remote_ls = terminal.sh(['flatpak', 'remote-ls', '--user', f'--columns={",".join(h)}'])
+            remote_ls_cache.extend( flatpak._parse_output(remote_ls, h, False) )
+
         update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
         
         if not '1.\t' in update_output:
@@ -301,8 +307,22 @@ class FlatpakProvider(Provider):
                     if (i > 0) and len(col) > 0:
                         cols.append(col)
 
+                app_origin = None
+
+                try:
+                    app_origin = terminal.sh(f'flatpak info {cols[0]} -o', True)
+                except:
+                    pass
+
                 update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) )
-                output.append( AppUpdateElement(cols[0], update_size))
+                app_update_element = AppUpdateElement(cols[0], update_size, None)
+                output.append( app_update_element )
+
+                if app_origin:
+                    for rc in remote_ls_cache:
+                        if rc['application'] == app_update_element.id and rc['origin'] == app_origin:
+                            app_update_element.to_version = rc['version']
+                            break
 
         return output
 

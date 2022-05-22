@@ -47,6 +47,7 @@ def gtk_image_from_url(url: str, image: Gtk.Image):
     loader.write_bytes(GLib.Bytes.new(response.content))
     loader.close()
 
+    image.clear()
     image.set_from_pixbuf(loader.get_pixbuf())
 
 def set_window_cursor(cursor: str):
