@@ -207,13 +207,14 @@ class FlatpakProvider(Provider):
             if (r in remotes):
                 if 'homepage' in remotes[r]:
                     source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START, **kwargs)
-                    source_heading.set_markup(f"""<a href="{remotes[r]['homepage']}">{remotes[r]['title']}</a>""")
+
+                    remote_link = f'https://flathub.org/apps/details/{list_element.id}' if r == 'flathub' else remotes[r]['homepage']
+                    source_heading.set_markup(f"""<a href="{remote_link}">{remotes[r]['title']}</a>""")
                     return source_heading
                 else:
                     return Gtk.Label( label=f"""{remotes[r]['title']}""", halign=Gtk.Align.START, **kwargs)
 
         if 'origin' in list_element.extra_data:
-
             element_remotes: List[str] = []
             if 'remotes' in list_element.extra_data:
                 element_remotes.extend(list_element.extra_data['remotes'])
