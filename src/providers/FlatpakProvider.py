@@ -237,6 +237,7 @@ class FlatpakProvider(Provider):
 
             expander = Gtk.Expander(label="Show history", child=Gtk.Spinner())
             expander.ref = self.get_ref(list_element)
+            expander._app = list_element
             expander.remote = list_element.extra_data['origin']
             expander.has_history = False
             expander.connect('notify::expanded', self.on_history_expanded)
@@ -266,11 +267,20 @@ class FlatpakProvider(Provider):
 
             list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
             for h in history:
-                row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=5, margin_bottom=5, margin_start=5)
-                row_title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'])
-                row_value = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True)
-                row.append(row_title)
-                row.append(row_value)
+                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
+                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+                title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'], wrap=True)
+                subtitle = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True, max_width_chars=100)
+                col.append(title)
+                col.append(subtitle)
+                row.append(col)
+
+                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
+                install_label = 'Downgrade' if expander._app.installed_status == InstalledStatus.INSTALLED else 'Install'
+                install_btn = Gtk.Button(css_classes=['suggested-action'], label=install_label)
+                col.append(install_btn)
+                row.append(col)
 
                 list_box.append(row)
 
@@ -396,7 +406,6 @@ class FlatpakProvider(Provider):
         desc = props['title']
 
         if props['url'] == flatpak.FLATHUB_REPO_URL:
-            log('qui')
             try:
                 appstream = flatpak.get_appstream(name, 'flathub')
                 if 'name' in appstream:

@@ -62,7 +62,7 @@ class AppDetails(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False):
+    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False) -> bool:
         self.app_list_element = el
         self.local_file = local_file
 
@@ -95,7 +95,9 @@ class AppDetails(Gtk.ScrolledWindow):
             if provider.can_install_file(file):
                 list_element = provider.create_list_element_from_file(file)
                 self.set_app_list_element(list_element, True, True)
-                break
+                return True
+
+        return False
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
