@@ -12,6 +12,7 @@
         "--system-talk-name=org.freedesktop.Flatpak",
         "--talk-name=org.freedesktop.Flatpak",
         "--filesystem=~/.local/share/flatpak",
+        "--filesystem=home",
         "--socket=wayland"
     ],
     "cleanup" : [

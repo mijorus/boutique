@@ -103,9 +103,6 @@ class BrowseApps(Gtk.ScrolledWindow):
                 r.set_visible(True)
                 r.load_icon(from_network=True)
 
-                r.image_container.queue_resize()
-                r.queue_resize()
-
         self.search_results.remove(spinner)
 
         self.queue_resize()

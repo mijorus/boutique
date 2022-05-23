@@ -42,7 +42,7 @@ class BoutiqueApplication(Adw.Application):
 
         css_provider = Gtk.CssProvider()
         css_provider.load_from_resource('/it/mijorus/boutique/assets/style.css')
-        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        # Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def do_activate(self):
         """Called when the application is activated.

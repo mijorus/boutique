@@ -68,6 +68,7 @@ class FlatpakProvider(Provider):
 
         if icon_in_local_path:
             image = Gtk.Image.new_from_file(local_file_path)
+            image.set_pixel_size(45)
         else:
             image = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
             remotes = flatpak.remotes_list()
@@ -370,9 +371,9 @@ class FlatpakProvider(Provider):
 
     def install_file(self, file, callback):
         def install_ref(path):
-            print('installing ', path)
+            log('installing ', path)
             terminal.sh(['flatpak', 'install', '--from', path, '--noninteractive', '--user'])
-            print('Installed!')
+            log('Installed!')
 
         threading.Thread(target=install_ref, args=(file.get_path(), ), daemon=True).start()
 
