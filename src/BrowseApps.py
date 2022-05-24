@@ -17,7 +17,7 @@ class BrowseApps(Gtk.ScrolledWindow):
 
     def __init__(self):
         super().__init__()
-
+        self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20, margin_bottom=20)
 
         self.search_entry = Gtk.SearchEntry()
@@ -43,6 +43,9 @@ class BrowseApps(Gtk.ScrolledWindow):
 
     def on_activated_row(self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow):
         """Emit and event that changes the active page of the Stack in the parent widget"""
+        if not hasattr(row, '_app'):
+            return 
+
         self.emit('selected-app', row._app)
 
     def on_search_entry_activated(self, widget: Gtk.SearchEntry):
@@ -60,7 +63,7 @@ class BrowseApps(Gtk.ScrolledWindow):
             return
 
         widget.set_text('')
-        self.search_results = Gtk.ListBox(hexpand=True, margin_top=10)
+        # self.search_results = Gtk.ListBox(hexpand=True, margin_top=10)
 
         # Perform search across all the providers
         Gio.Application.get_default().mark_busy()
@@ -70,18 +73,27 @@ class BrowseApps(Gtk.ScrolledWindow):
             thread = threading.Thread(target=self.populate_search, args=(query, provider, ), daemon=True)
             thread.start()
 
-        self.search_results_slot.append(self.search_results)
-        self.search_results.connect('row-activated', self.on_activated_row)
+        # self.search_results_slot.append(self.search_results)
+        # self.search_results.connect('row-activated', self.on_activated_row)
 
     def populate_search(self, query: str, provider: Provider):
         """Async function to populate the listbox without affecting the main thread"""
+        self.search_results = Gtk.ListBox(hexpand=True, margin_top=10)
         self.search_results.set_css_classes(['boxed-list'])
-        spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
-        self.search_results.append(spinner)
+
+        spinner = Gtk.ListBoxRow(
+            child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5),
+            hexpand=True,
+            halign=Gtk.Align.CENTER,
+            margin_top=10
+        )
+
+        self.search_results_slot.append(spinner)
         self.search_entry.set_editable(False)
 
         utils.set_window_cursor('wait')
         result: List[AppListElement] = provider.search(query)
+
 
         if not result:
             list_row = Gtk.Label(
@@ -93,19 +105,25 @@ class BrowseApps(Gtk.ScrolledWindow):
             self.search_results.append(list_row)
 
         else:
-            search_results_rows = []
+            def load_icon(row):
+                row.load_icon(from_network=True)
+
+            threads: List[threading.Thread] = []
+
             for i, app in enumerate(result):
-                list_row = AppListBoxItem(app, activatable=True, selectable=True, hexpand=True, visible=False)
+                list_row = AppListBoxItem(app, activatable=True, selectable=True, hexpand=True, visible=True)
                 self.search_results.append(list_row)
-                search_results_rows.append(list_row)
+                threads.append( threading.Thread(target=load_icon, args=(list_row, )) )
 
-            for r in search_results_rows:
-                r.set_visible(True)
-                r.load_icon(from_network=True)
+            for t in threads:
+                t.start()
 
-        self.search_results.remove(spinner)
+            for t in threads:
+                t.join()
 
-        self.queue_resize()
+        self.search_results.connect('row-activated', self.on_activated_row)
+        self.search_results_slot.remove(spinner)
+        self.search_results_slot.append(self.search_results)
+
         self.search_entry.set_editable(True)
-
         utils.set_window_cursor('default')

@@ -45,17 +45,6 @@ class FlatpakProvider(Provider):
         return output
 
     def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False) -> Gtk.Image:
-        def load_from_network_task(image_widget: Gtk.Image, list_element: AppListElement, remote: Union[dict, bool]=False):
-            if (not remote) or ('url' not in remote):
-                return
-
-            url = re.sub(r'\/$', '', remote['url'])
-
-            try:
-                gtk_image_from_url(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png', image_widget)
-            except Exception as e:
-                log(e)
-
         icon_in_local_path = False
 
         if 'origin' in list_element.extra_data and 'arch' in list_element.extra_data:
@@ -78,13 +67,12 @@ class FlatpakProvider(Provider):
                 pref_remote = 'flathub' if ('flathub' in list_element.extra_data['remotes']) else list_element.extra_data['remotes'][0]
                 pref_remote_data = key_in_dict(remotes, pref_remote)
 
-                thread = threading.Thread(
-                    target=load_from_network_task, 
-                    daemon=True, 
-                    args=(image, list_element, pref_remote_data, )
-                )
-
-                thread.start()
+                if pref_remote_data and ('url' in pref_remote_data):
+                    try:
+                        url = re.sub(r'\/$', '', pref_remote_data['url'])
+                        gtk_image_from_url(f'{url}/appstream/x86_64/icons/64x64/{urllib.parse.quote(list_element.id, safe="")}.png', image)
+                    except Exception as e:
+                        log(e)
 
         return image
 
