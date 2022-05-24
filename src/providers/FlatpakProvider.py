@@ -9,6 +9,7 @@ import html2text
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
 from ..models.AppListElement import AppListElement, InstalledStatus
+from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional
@@ -226,10 +227,14 @@ class FlatpakProvider(Provider):
             source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
 
             if (list_element.installed_status == InstalledStatus.INSTALLED) and (len(element_remotes) > 1):
-                source_row.append( Gtk.Label(label='Installed from:', css_classes=['heading'], halign=Gtk.Align.START) )
+                source_row.append( LabelStart(label='Installed from:', css_classes=['heading']) )
                 source_row.append( get_remote_link(list_element.extra_data['origin'], margin_bottom=20) )
 
-            source_row.append( Gtk.Label(label='Available from:', css_classes=['heading'], halign=Gtk.Align.START))
+            if 'file_path' in list_element.extra_data:
+                source_row.append( LabelStart(label='File:', css_classes=['heading']) )
+                source_row.append( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
+
+            source_row.append( LabelStart(label='Available from:', css_classes=['heading']))
             for r in element_remotes:
                source_row.append( get_remote_link(r) )
 
@@ -279,6 +284,8 @@ class FlatpakProvider(Provider):
                 col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
                 install_label = 'Downgrade' if expander._app.installed_status == InstalledStatus.INSTALLED else 'Install'
                 install_btn = Gtk.Button(css_classes=['suggested-action'], label=install_label)
+                # install_btn._app = list
+                install_btn.connect('clicked', self.show_downgrade_dialog)
                 col.append(install_btn)
                 row.append(col)
 
@@ -417,6 +424,7 @@ class FlatpakProvider(Provider):
             remotes=[ flatpak.find_remote_from_url(props['url']) ],
             branch=props['branch'],
             origin=flatpak.find_remote_from_url(props['url']),
+            file_path=file.get_path()
         )
 
         return list_element
@@ -428,3 +436,15 @@ class FlatpakProvider(Provider):
             return { list_element.extra_data['origin']: list_element.extra_data['origin'] }
         else:
             return {}
+
+    def show_downgrade_dialog(self, list_element: AppListElement, to_version: str):
+        action = 'downgrade' if list_element.installed_status.INSTALLED else 'install'
+        dialog = Gtk.MessageDialog(
+            text=f'Do you really want to {action} "{list_element.name}" ?',
+            secondary_text=f'An older version might contain bugs and could have issues with newer configuration files. If you decide to proceed, {to_version} will be installed.'
+        )
+
+        dialog.add_button(Gtk.Button(label="Yes"))
+        dialog.add_button(Gtk.Button(label="No"))
+
+        dialog.set_modal()
