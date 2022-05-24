@@ -301,8 +301,10 @@ class FlatpakProvider(Provider):
 
     def list_updateable(self) -> List[AppUpdateElement]:
         if not remote_ls_cache:
+            terminal.sh(['flatpak', 'update', '--appstream'])
+
             h = ['application', 'version', 'origin']
-            remote_ls = terminal.sh(['flatpak', 'remote-ls', '--user', f'--columns={",".join(h)}'])
+            remote_ls = terminal.sh(['flatpak', 'remote-ls', '--user', f'--columns={",".join(h)}', '--updates'])
             remote_ls_cache.extend( flatpak._parse_output(remote_ls, h, False) )
 
         update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
