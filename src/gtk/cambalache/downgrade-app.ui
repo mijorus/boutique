@@ -4,8 +4,8 @@
   <!-- interface-name modal.ui -->
   <requires lib="gtk" version="4.0"/>
   <object class="GtkMessageDialog">
-    <property name="buttons">yes-no</property>
     <property name="message-type">question</property>
     <property name="text">Do you really want to downgrade?</property>
+    <property name="secondary-text"></property>
   </object>
 </interface>

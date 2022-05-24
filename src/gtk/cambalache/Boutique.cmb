@@ -8,7 +8,6 @@
 	(1,1,"GtkMessageDialog",None,None,None,None,None,None)
   </object>
   <object_property>
-	(1,1,"GtkMessageDialog","buttons","yes-no",None,None,None,None),
 	(1,1,"GtkMessageDialog","message-type","question",None,None,None,None),
 	(1,1,"GtkMessageDialog","text","Do you really want to downgrade?",None,None,None,None)
   </object_property>
