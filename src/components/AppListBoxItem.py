@@ -53,6 +53,4 @@ class AppListBoxItem(Gtk.ListBoxRow):
 
     def set_update_version(self, text: Optional[str]):
         self.update_version.set_visible(text != None)
-
-        if text:
-            self.update_version.set_label(text)
+        self.update_version.set_label(text if text else '')
