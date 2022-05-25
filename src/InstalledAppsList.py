@@ -9,7 +9,7 @@ from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
 from .components.FilterEntry import FilterEntry
 from .components.AppListBoxItem import AppListBoxItem
-from .lib.utils import set_window_cursor
+from .lib.utils import set_window_cursor, key_in_dict
 
 class InstalledAppsList(Gtk.ScrolledWindow):
     __gsignals__ = {
@@ -38,7 +38,9 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.updates_row_list: Optional[Gtk.ListBox] = None
 
         updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER, margin_bottom=5)
-        updates_title_row.append( Gtk.Label(label='Available updates', css_classes=['title-4'], hexpand=True, halign=Gtk.Align.START) )
+
+        self.updates_title_label = Gtk.Label(label='', css_classes=['title-4'], hexpand=True, halign=Gtk.Align.START)
+        updates_title_row.append( self.updates_title_label )
         
         self.update_all_btn =  Gtk.Button(label='Update all', css_classes=['suggested-action'], valign=Gtk.Align.CENTER) 
         self.update_all_btn.connect('clicked', self.on_update_all_btn_clicked)
@@ -79,10 +81,8 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             installed: List[AppListElement] = provider.list_installed()
 
             for i in installed:
-                list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)
-                
-                if 'version' in i.extra_data:
-                    list_row.set_update_version(i.extra_data['version'])
+                list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)                
+                list_row.set_update_version(key_in_dict(i.extra_data, 'version'))
 
                 list_row.load_icon(from_network=False)
                 self.installed_apps_list_rows.append(list_row)
@@ -121,6 +121,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 break
 
     def refresh_upgradable_list(self, only: Optional[str]=None):
+        self.updates_title_label.set_label('Searching for updates...')
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 
         upgradable = 0
@@ -156,6 +157,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.updates_row.set_visible(upgradable > 0)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
+        self.updates_title_label.set_label('Avaiable updates')
         # self.installed_apps_list.invalidate_filter()
         self.trigger_filter_list(self.filter_entry)
 
