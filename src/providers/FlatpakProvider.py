@@ -134,6 +134,7 @@ class FlatpakProvider(Provider):
             'org.videolan.VLC.Plugin'
         ]
 
+        apps: Dict[str, list] = {}
         for app in result[0:100]:
             skip = False
             for i in ignored_patterns:
@@ -144,35 +145,64 @@ class FlatpakProvider(Provider):
             if skip:
                 continue
 
+            if not app['application'] in apps:
+                apps[ app['application'] ] = []
+
+            apps[ app['application'] ].append(app)
+
+        for app_id, app_sources in apps.items():
             installed_status = InstalledStatus.NOT_INSTALLED
             for i in installed_apps:
-                if i['application'] == app['application']:
+                if i['application'] == app_id:
                     installed_status = InstalledStatus.INSTALLED
                     break
 
-            fk_remotes = flatpak.remotes_list()
-            app_remotes = app['remotes'].split(',')
             remotes_map = {}
+            fk_remotes = flatpak.remotes_list()
 
-            for r in app_remotes:
-                if (r in fk_remotes):
-                    remotes_map[r] = fk_remotes[r]['title']
+            app_list_element_sources: list(AppListElement) = []
+            preselected_app: AppListElement = None
 
-            output.append(
-                AppListElement(
-                    ( app['name'] ), 
-                    ( app['description'] ), 
-                    app['application'], 
+            for app_source in app_sources:
+                branch_name = app_source["branch"]
+                app_source['full_app_id'] = f'flatpak:{app_source["application"]}/{flatpak.get_default_aarch()}/{app_source["branch"]}'
+                app_remotes = app_source['remotes'].split(',')
+
+                for r in app_remotes:
+                    if (r in fk_remotes):
+                        fk_remote_title = fk_remotes[r]['title'] 
+
+                        if len(app_sources) > 1:
+                            fk_remote_title += f' ({branch_name})'
+
+                        remotes_map[f'{r}/{branch_name}'] = fk_remote_title
+
+                source_list_element = AppListElement(
+                    ( app_source['name'] ), 
+                    ( app_source['description'] ), 
+                    app_source['application'], 
                     'flatpak',
                     installed_status,
+                    None,
 
-                    version=app['version'],
-                    branch=app['branch'],
+                    version=app_source['version'],
+                    branch=app_source['branch'],
                     remotes=app_remotes,
                     remotes_map=remotes_map,
                     origin=app_remotes[0],
+                    full_app_id=app_source['full_app_id']
                 )
-            )
+
+                if app_source['branch'] == 'stable':
+                    preselected_app = source_list_element
+
+                app_list_element_sources.append(source_list_element)
+
+            if not preselected_app:
+                preselected_app = app_list_element_sources[0]
+
+            preselected_app.alt_sources = app_list_element_sources
+            output.append(preselected_app)
 
         return output
 
@@ -438,3 +468,9 @@ class FlatpakProvider(Provider):
         dialog.add_button(Gtk.Button(label="No"))
 
         dialog.set_modal()
+
+    # def get_active_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
+    #     if hasattr(list_element, 'alt_sources'):
+    #         return list_element
+
+    #     # for alt_source in list_element.alt_sources:

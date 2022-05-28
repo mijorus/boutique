@@ -4,7 +4,7 @@ from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
-from .lib.utils import cleanhtml, key_in_dict, set_window_cursor
+from .lib.utils import cleanhtml, key_in_dict, set_window_cursor, get_application_window
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
@@ -31,10 +31,12 @@ class AppDetails(Gtk.ScrolledWindow):
         title_col.append(self.app_id)
         title_col.append(self.version)
 
-        self.primary_action_button = Adw.SplitButton(label='Install', valign=Gtk.Align.CENTER)
-        self.primary_action_button.get_last_child().set_visible(False)
+        self.source_selector = Gtk.ComboBoxText()
+        self.source_selector.connect('changed', self.on_source_selector_changed)
 
+        self.primary_action_button = Gtk.Button(label='Install', valign=Gtk.Align.CENTER)
         self.secondary_action_button = Gtk.Button(label='', valign=Gtk.Align.CENTER, visible=False)
+
         self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
         self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
 
@@ -62,7 +64,7 @@ class AppDetails(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False) -> bool:
+    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False):
         self.app_list_element = el
         self.local_file = local_file
 
@@ -76,7 +78,6 @@ class AppDetails(Gtk.ScrolledWindow):
         self.details_row.prepend(self.icon_slot)
 
         self.title.set_label(cleanhtml(el.name))
-        self.update_installation_status(check_installed=True)
 
         version_label = key_in_dict(el.extra_data, 'version')
         self.version.set_markup( '' if not version_label else f'<small>{version_label}</small>' )
@@ -88,6 +89,18 @@ class AppDetails(Gtk.ScrolledWindow):
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
+
+        app_sources = self.provider.get_app_sources(self.app_list_element)
+        self.install_button_label_info = None
+
+        if len( list(app_sources.items()) ) > 1:
+            for remote, title in app_sources.items():
+                self.source_selector.append(remote, f'Install from: {title}')
+
+            self.source_selector.set_active_id( list(app_sources.items())[0][0] )
+            get_application_window().titlebar.set_title_widget(self.source_selector)
+
+        self.update_installation_status(check_installed=True)
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
     def set_from_local_file(self, file: Gio.File):
@@ -136,9 +149,6 @@ class AppDetails(Gtk.ScrolledWindow):
             set_window_cursor('default')
 
     def update_installation_status(self, check_installed=False):
-        self.primary_action_button.set_menu_model(None)
-        self.primary_action_button.get_last_child().set_visible(False)
-
         self.secondary_action_button.set_visible(False)
 
         if check_installed:
@@ -163,22 +173,10 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_css_classes([])
 
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
-            self.primary_action_button.set_label('Install')
             self.primary_action_button.set_css_classes(['suggested-action'])
 
-            app_sources = self.provider.get_app_sources(self.app_list_element)
-            if len( list(app_sources.items()) ) > 1:
-                gmenu = Gio.Menu()
-                i = 0
-
-                for remote, title in app_sources.items():
-                    if i == 0: self.primary_action_button.set_label('Install from ' + title)
-                    gmenu.append('Install from ' + title, None)
-                    i +=1
-
-                self.primary_action_button.set_menu_model(gmenu)
-                self.primary_action_button.get_last_child().set_visible(True)
-
+            if self.install_button_label_info:
+                self.primary_action_button.set_label(self.install_button_label_info)
             else:
                 self.primary_action_button.set_label('Install')
 
@@ -199,5 +197,5 @@ class AppDetails(Gtk.ScrolledWindow):
 
         self.description.set_markup(desc)
 
-    def on_back(self, widget):
-        self.emit('show_list', None)
+    def on_source_selector_changed(self, widget):
+        new_source = widget.get_active_id()

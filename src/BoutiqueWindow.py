@@ -73,8 +73,10 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.installed_apps_list.connect('selected-app', self.on_selected_installed_app)
         # Show details of an app from global search
         self.browse_apps.connect('selected-app', self.on_selected_browsed_app)
-        # come back to the list from the app details window
-        self.app_details.connect('show_list', self.on_show_installed_list)
+        
+        # # come back to the list from the app details window
+        # self.app_details.connect('show_list', self.on_show_installed_list)
+
         # left arrow click
         self.left_button.connect('clicked', self.on_left_button_clicked)
         # change visible child of the app list stack
@@ -120,10 +122,12 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
     def on_left_button_clicked(self, widget):
         if self.app_lists_stack.get_visible_child() == self.installed_stack:
             if self.container_stack.get_visible_child() == self.app_details:
+                self.titlebar.set_title_widget(self.view_title_widget)
                 self.on_show_installed_list()
 
         elif self.app_lists_stack.get_visible_child() == self.browse_stack:
             if self.container_stack.get_visible_child() == self.app_details:
+                self.titlebar.set_title_widget(self.view_title_widget)
                 self.on_show_browsed_list()
 
     def on_app_lists_stack_change(self, widget, _):
