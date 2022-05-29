@@ -1,4 +1,5 @@
 import threading
+import time
 from gi.repository import Gtk, GObject, Adw, Gdk, Gio
 from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
@@ -8,9 +9,6 @@ from .lib.utils import cleanhtml, key_in_dict, set_window_cursor, get_applicatio
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
-    __gsignals__ = {
-      "show_list": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
-    }
 
     def __init__(self):
         super().__init__()
@@ -136,6 +134,15 @@ class AppDetails(Gtk.ScrolledWindow):
             )
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
+            self.provider.uninstall(
+                self.app_list_element, 
+                lambda result: self.update_installation_status()
+            )
+
+    def on_secondary_action_button_clicked(self, button: Gtk.Button):
+        if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
+            self.provider.run(self.app_list_element)
+        elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
             self.app_list_element.set_installed_status(InstalledStatus.UPDATING)
             self.update_installation_status()
             self.provider.update(
@@ -143,20 +150,24 @@ class AppDetails(Gtk.ScrolledWindow):
                 lambda result: self.update_installation_status()
             )
 
-    def on_secondary_action_button_clicked(self, button: Gtk.Button):
-        if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
-            set_window_cursor('wait')
-            self.provider.run(self.app_list_element)
-            set_window_cursor('default')
-
     def update_installation_status(self, check_installed=False):
+        self.primary_action_button.set_css_classes([])
         self.secondary_action_button.set_visible(False)
+        self.secondary_action_button.set_css_classes([])
 
         if check_installed:
-            if not self.provider.is_installed(self.app_list_element):
-                self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
-            else:
-                self.app_list_element.installed_status = InstalledStatus.INSTALLED
+            skip_checks = False
+            for app_updateable in self.provider.list_updatables(from_cache=True):
+                if app_updateable.id == self.app_list_element.id:
+                    self.app_list_element.installed_status = InstalledStatus.UPDATE_AVAILABLE
+                    skip_checks = True
+                    break
+
+            if not skip_checks:
+                if not self.provider.is_installed(self.app_list_element):
+                    self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
+                else:
+                    self.app_list_element.installed_status = InstalledStatus.INSTALLED
 
         if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
             self.secondary_action_button.set_label('Open')
@@ -167,11 +178,9 @@ class AppDetails(Gtk.ScrolledWindow):
 
         elif self.app_list_element.installed_status == InstalledStatus.UNINSTALLING:
             self.primary_action_button.set_label('Uninstalling...')
-            self.primary_action_button.set_css_classes([])
 
         elif self.app_list_element.installed_status == InstalledStatus.INSTALLING:
             self.primary_action_button.set_label('Installing...')
-            self.primary_action_button.set_css_classes([])
 
         elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
             self.primary_action_button.set_css_classes(['suggested-action'])
@@ -182,12 +191,15 @@ class AppDetails(Gtk.ScrolledWindow):
                 self.primary_action_button.set_label('Install')
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
-            self.primary_action_button.set_label('Update')
-            self.primary_action_button.set_css_classes(['suggested-action'])
+            self.secondary_action_button.set_label('Update')
+            self.secondary_action_button.set_css_classes(['suggested-action'])
+            self.secondary_action_button.set_visible(True)
+
+            self.primary_action_button.set_label('Uninstall')
+            self.primary_action_button.set_css_classes(['destructive-action'])
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATING:
             self.primary_action_button.set_label('Updating')
-            self.primary_action_button.set_css_classes([])
 
     def load_description(self):
         spinner = Gtk.Spinner(spinning=True)
@@ -200,6 +212,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def on_source_selector_changed(self, widget):
         new_source = widget.get_active_id()
+        print(new_source)
 
         if not new_source:
             return

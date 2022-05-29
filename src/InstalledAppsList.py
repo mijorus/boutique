@@ -121,6 +121,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 break
 
     def refresh_upgradable_list(self, only: Optional[str]=None):
+        """Runs the background task to check for app updates"""
         self.updates_title_label.set_label('Searching for updates...')
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 
@@ -134,7 +135,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             if only is not None and p != only:
                 continue
 
-            self.upgradable_cache[p] = provider.list_updateable() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
+            self.upgradable_cache[p] = provider.list_updatables() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
             self.updates_row_list.remove(spinner)
 
             for row in self.installed_apps_list_rows:

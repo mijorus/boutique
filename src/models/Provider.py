@@ -39,7 +39,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def list_updateable(self) -> List[AppUpdateElement]:
+    def list_updatables(self, from_cache=False) -> List[AppUpdateElement]:
         pass
 
     @abstractmethod

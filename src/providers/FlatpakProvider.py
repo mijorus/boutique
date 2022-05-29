@@ -15,10 +15,17 @@ from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 
-remote_ls_cache: List = []
 class FlatpakProvider(Provider):
     def __init__(self):
-        pass
+        self.remote_ls_cache: Optional[List] = None
+        self.cache_list_updatables: Optional[str] = None
+        self.ignored_patterns = [
+            'org.gtk.Gtk3theme',
+            'org.kde.PlatformTheme',
+            'org.kde.WaylandDecoration',
+            'org.kde.KStyle',
+            'org.videolan.VLC.Plugin'
+        ]
 
     def is_installed(self, list_element: AppListElement):
         return flatpak.is_installed(self.get_ref(list_element))
@@ -126,18 +133,11 @@ class FlatpakProvider(Provider):
         result = flatpak.search(query)
 
         output = []
-        ignored_patterns = [
-            'org.gtk.Gtk3theme',
-            'org.kde.PlatformTheme',
-            'org.kde.WaylandDecoration',
-            'org.kde.KStyle',
-            'org.videolan.VLC.Plugin'
-        ]
 
         apps: Dict[str, list] = {}
         for app in result[0:100]:
             skip = False
-            for i in ignored_patterns:
+            for i in self.ignored_patterns:
                 if i in app['application']:
                     skip = True
                     break
@@ -317,15 +317,13 @@ class FlatpakProvider(Provider):
 
         threading.Thread(target=create_log_expander, args=(expander, )).start()
 
-    def list_updateable(self) -> List[AppUpdateElement]:
-        if not remote_ls_cache:
-            terminal.sh(['flatpak', 'update', '--appstream'])
-
-            h = ['application', 'version', 'origin']
-            remote_ls = terminal.sh(['flatpak', 'remote-ls', '--user', f'--columns={",".join(h)}', '--updates'])
-            remote_ls_cache.extend( flatpak._parse_output(remote_ls, h, False) )
-
-        update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
+    def list_updatables(self, from_cache=False) -> List[AppUpdateElement]:
+        if from_cache and (self.cache_list_updatables is not None):
+            update_output = self.cache_list_updatables
+        else:
+            self.update_remote_ls_cache()
+            update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
+            self.cache_list_updatables = update_output
         
         if not '1.\t' in update_output:
             return []
@@ -358,7 +356,7 @@ class FlatpakProvider(Provider):
                 output.append( app_update_element )
 
                 if app_origin:
-                    for rc in remote_ls_cache:
+                    for rc in self.remote_ls_cache:
                         if rc['application'] == app_update_element.id and rc['origin'] == app_origin:
                             app_update_element.to_version = rc['version']
                             break
@@ -373,6 +371,8 @@ class FlatpakProvider(Provider):
             try:
                 terminal.sh(['flatpak', 'update', '--user', '--noninteractive', ref])
                 list_element.set_installed_status(InstalledStatus.INSTALLED)
+                self.cache_list_updatables = None
+                self.remote_ls_cache = None
                 success = True
             except Exception as e:
                 print(e)
@@ -475,6 +475,23 @@ class FlatpakProvider(Provider):
 
         for alt_source in list_element.alt_sources:
             if source_id == alt_source.extra_data['source_id']:
+                self.update_remote_ls_cache()
+                
+                for rc in self.remote_ls_cache:
+                    if (rc['application'] == alt_source.id) and (rc['origin'] == alt_source.extra_data['origin']):
+                        alt_source.extra_data['version'] = rc['version']
+                        break
+
                 return alt_source
 
         return list_element
+
+    def update_remote_ls_cache(self):
+        """Updated the global remote_ls_cache varaible"""
+        if not self.remote_ls_cache:
+            self.remote_ls_cache = []
+            terminal.sh(['flatpak', 'update', '--appstream'])
+
+            h = ['application', 'version', 'origin']
+            remote_ls = terminal.sh(['flatpak', 'remote-ls', '--user', f'--columns={",".join(h)}', '--updates'])
+            self.remote_ls_cache.extend( flatpak._parse_output(remote_ls, h, False) )
