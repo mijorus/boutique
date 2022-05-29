@@ -27,9 +27,8 @@ class AppDetails(Gtk.ScrolledWindow):
         self.version = Gtk.Label(label='', halign=Gtk.Align.START, css_classes=['dim-label'])
         self.app_id = Gtk.Label(label='', halign=Gtk.Align.START, selectable=True, css_classes=['dim-label'])
 
-        title_col.append(self.title)
-        title_col.append(self.app_id)
-        title_col.append(self.version)
+        for el in [self.title, self.app_id, self.version]:
+            title_col.append(el)
 
         self.source_selector = Gtk.ComboBoxText()
         self.source_selector.connect('changed', self.on_source_selector_changed)
@@ -40,10 +39,8 @@ class AppDetails(Gtk.ScrolledWindow):
         self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
         self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
 
-        self.details_row.append(self.icon_slot)
-        self.details_row.append(title_col)
-        self.details_row.append(self.secondary_action_button)
-        self.details_row.append(self.primary_action_button)
+        for el in [self.icon_slot, title_col, self.secondary_action_button, self.primary_action_button]:
+            self.details_row.append(el)
 
         # 2nd row
         self.desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
@@ -56,10 +53,8 @@ class AppDetails(Gtk.ScrolledWindow):
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
 
-        self.main_box.append(self.details_row)
-        self.main_box.append(self.desc_row)
-        self.main_box.append(self.third_row)
-
+        for el in [self.details_row, self.desc_row, self.third_row]:
+            self.main_box.append(el)
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)

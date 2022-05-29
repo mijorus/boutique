@@ -12,7 +12,7 @@ from ..models.AppListElement import AppListElement, InstalledStatus
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
-from typing import List, Callable, Union, Dict, Optional
+from typing import List, Callable, Union, Dict, Optional, List
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 
 remote_ls_cache: List = []
@@ -160,7 +160,7 @@ class FlatpakProvider(Provider):
             remotes_map = {}
             fk_remotes = flatpak.remotes_list()
 
-            app_list_element_sources: list(AppListElement) = []
+            app_list_element_sources: List[AppListElement] = []
             preselected_app: AppListElement = None
 
             for app_source in app_sources:
