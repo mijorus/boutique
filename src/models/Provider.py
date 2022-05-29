@@ -70,6 +70,6 @@ class Provider(ABC):
     def get_app_sources(self, list_element: AppListElement) -> Dict[str, str]:
         pass
 
-    # @abstractmethod
-    # def get_active_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
-    #     pass
+    @abstractmethod
+    def get_selected_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
+        pass

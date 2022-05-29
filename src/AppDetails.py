@@ -30,8 +30,8 @@ class AppDetails(Gtk.ScrolledWindow):
         for el in [self.title, self.app_id, self.version]:
             title_col.append(el)
 
+        self.source_selector_hdlr = None
         self.source_selector = Gtk.ComboBoxText()
-        self.source_selector.connect('changed', self.on_source_selector_changed)
 
         self.primary_action_button = Gtk.Button(label='Install', valign=Gtk.Align.CENTER)
         self.secondary_action_button = Gtk.Button(label='', valign=Gtk.Align.CENTER, visible=False)
@@ -88,12 +88,18 @@ class AppDetails(Gtk.ScrolledWindow):
         app_sources = self.provider.get_app_sources(self.app_list_element)
         self.install_button_label_info = None
 
+        self.source_selector.remove_all()
+        if self.source_selector_hdlr:
+            self.source_selector.disconnect(self.source_selector_hdlr)    
+
         if len( list(app_sources.items()) ) > 1:
             for remote, title in app_sources.items():
                 self.source_selector.append(remote, f'Install from: {title}')
 
             self.source_selector.set_active_id( list(app_sources.items())[0][0] )
             get_application_window().titlebar.set_title_widget(self.source_selector)
+
+        self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
 
         self.update_installation_status(check_installed=True)
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
@@ -194,3 +200,10 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def on_source_selector_changed(self, widget):
         new_source = widget.get_active_id()
+
+        if not new_source:
+            return
+
+        self.set_app_list_element(
+            self.provider.get_selected_source(self.app_list_element, new_source)
+        )

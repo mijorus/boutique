@@ -157,15 +157,14 @@ class FlatpakProvider(Provider):
                     installed_status = InstalledStatus.INSTALLED
                     break
 
-            remotes_map = {}
+            remotes_map: Dict[str, str] = {}
             fk_remotes = flatpak.remotes_list()
 
             app_list_element_sources: List[AppListElement] = []
-            preselected_app: AppListElement = None
+            preselected_app: Optional[AppListElement] = None
 
             for app_source in app_sources:
                 branch_name = app_source["branch"]
-                app_source['full_app_id'] = f'flatpak:{app_source["application"]}/{flatpak.get_default_aarch()}/{app_source["branch"]}'
                 app_remotes = app_source['remotes'].split(',')
 
                 for r in app_remotes:
@@ -175,33 +174,34 @@ class FlatpakProvider(Provider):
                         if len(app_sources) > 1:
                             fk_remote_title += f' ({branch_name})'
 
-                        remotes_map[f'{r}/{branch_name}'] = fk_remote_title
+                        app_source['source_id'] = f'{r}:{app_source["application"]}/{flatpak.get_default_aarch()}/{app_source["branch"]}'
+                        remotes_map[ app_source['source_id'] ] = fk_remote_title
 
-                source_list_element = AppListElement(
-                    ( app_source['name'] ), 
-                    ( app_source['description'] ), 
-                    app_source['application'], 
-                    'flatpak',
-                    installed_status,
-                    None,
+                        source_list_element = AppListElement(
+                            ( app_source['name'] ), 
+                            ( app_source['description'] ), 
+                            app_source['application'], 
+                            'flatpak',
+                            installed_status,
+                            None,
 
-                    version=app_source['version'],
-                    branch=app_source['branch'],
-                    remotes=app_remotes,
-                    remotes_map=remotes_map,
-                    origin=app_remotes[0],
-                    full_app_id=app_source['full_app_id']
-                )
+                            version=app_source['version'],
+                            branch=app_source['branch'],
+                            origin=r,
+                            source_id=app_source['source_id']
+                        )
 
-                if app_source['branch'] == 'stable':
+                        app_list_element_sources.append(source_list_element)
+
+                if (app_source['branch'] == 'stable') and (not preselected_app):
                     preselected_app = source_list_element
-
-                app_list_element_sources.append(source_list_element)
 
             if not preselected_app:
                 preselected_app = app_list_element_sources[0]
 
             preselected_app.alt_sources = app_list_element_sources
+            preselected_app.extra_data['remotes_map'] = remotes_map
+            preselected_app.extra_data['remotes'] = app_remotes
             output.append(preselected_app)
 
         return output
@@ -469,8 +469,12 @@ class FlatpakProvider(Provider):
 
         dialog.set_modal()
 
-    # def get_active_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
-    #     if hasattr(list_element, 'alt_sources'):
-    #         return list_element
+    def get_selected_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
+        if not list_element.alt_sources:
+            return list_element
 
-    #     # for alt_source in list_element.alt_sources:
+        for alt_source in list_element.alt_sources:
+            if source_id == alt_source.extra_data['source_id']:
+                return alt_source
+
+        return list_element
