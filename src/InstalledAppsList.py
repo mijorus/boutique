@@ -25,7 +25,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list_slot = Gtk.Box()
         self.installed_apps_list: Optional[Gtk.ListBox] = None
         self.installed_apps_list_rows: List[Gtk.ListBoxRow] = []
-        self.no_apps_found_row = Gtk.ListBoxRow(child=Gtk.Label(label="No apps found", css_classes=['app-listbox-item']), hexpand=True)
+        self.no_apps_found_row = Gtk.ListBoxRow(
+            child=Gtk.Label(label="No apps found", css_classes=['app-listbox-item'], margin_bottom=20, margin_top=20), 
+            hexpand=True
+        )
 
         # Create the filter search bar
         self.filter_query: str = ''
