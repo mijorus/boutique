@@ -212,11 +212,11 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def on_source_selector_changed(self, widget):
         new_source = widget.get_active_id()
-        print(new_source)
 
         if not new_source:
             return
 
-        self.provider.get_selected_source(self.app_list_element, new_source)
-        # self.set_app_list_element(
-        # )
+        print(new_source)
+        self.set_app_list_element(
+            self.provider.get_selected_source(self.app_list_element, new_source)
+        )

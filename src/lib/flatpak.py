@@ -154,3 +154,21 @@ def find_remote_from_url(url: str) -> Optional[str]:
             return r['name']
 
     return None
+
+def remote_ls(updates_only=False, cached=False, origin: Optional[str]=None):
+    h = ['application', 'version', 'origin']
+    command_args = ['flatpak', 'remote-ls', '--user']
+
+    if origin:
+        command_args.append(origin)
+
+    if updates_only:
+        command_args.append('--updates')
+    
+    if cached:
+        command_args.append('--cached')
+
+    command_args.append(f'--columns={",".join(h)}')
+
+    output = sh(command_args)
+    return _parse_output(output, h, False)

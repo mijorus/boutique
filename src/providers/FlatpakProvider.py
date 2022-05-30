@@ -17,7 +17,7 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 
 class FlatpakProvider(Provider):
     def __init__(self):
-        self.remote_ls_cache: Optional[List] = None
+        self.remote_ls_updatable_cache: Optional[List] = None
         self.cache_list_updatables: Optional[str] = None
         self.ignored_patterns = [
             'org.gtk.Gtk3theme',
@@ -321,7 +321,7 @@ class FlatpakProvider(Provider):
         if from_cache and (self.cache_list_updatables is not None):
             update_output = self.cache_list_updatables
         else:
-            self.update_remote_ls_cache()
+            self.update_remote_ls_updatable_cache()
             update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
             self.cache_list_updatables = update_output
         
@@ -356,7 +356,7 @@ class FlatpakProvider(Provider):
                 output.append( app_update_element )
 
                 if app_origin:
-                    for rc in self.remote_ls_cache:
+                    for rc in self.remote_ls_updatable_cache:
                         if rc['application'] == app_update_element.id and rc['origin'] == app_origin:
                             app_update_element.to_version = rc['version']
                             break
@@ -372,7 +372,7 @@ class FlatpakProvider(Provider):
                 terminal.sh(['flatpak', 'update', '--user', '--noninteractive', ref])
                 list_element.set_installed_status(InstalledStatus.INSTALLED)
                 self.cache_list_updatables = None
-                self.remote_ls_cache = None
+                self.remote_ls_updatable_cache = None
                 success = True
             except Exception as e:
                 print(e)
@@ -475,9 +475,9 @@ class FlatpakProvider(Provider):
 
         for alt_source in list_element.alt_sources:
             if source_id == alt_source.extra_data['source_id']:
-                self.update_remote_ls_cache()
-                
-                for rc in self.remote_ls_cache:
+                remote_ls_items = flatpak.remote_ls(updates_only=False, cached=True, origin=alt_source.extra_data['origin'])
+ 
+                for rc in remote_ls_items:
                     if (rc['application'] == alt_source.id) and (rc['origin'] == alt_source.extra_data['origin']):
                         alt_source.extra_data['version'] = rc['version']
                         break
@@ -486,12 +486,10 @@ class FlatpakProvider(Provider):
 
         return list_element
 
-    def update_remote_ls_cache(self):
+    def update_remote_ls_updatable_cache(self):
         """Updated the global remote_ls_cache varaible"""
-        if self.remote_ls_cache is None:
-            self.remote_ls_cache = []
+        if self.remote_ls_updatable_cache is None:
+            self.remote_ls_updatable_cache = []
             terminal.sh(['flatpak', 'update', '--appstream'])
 
-            h = ['application', 'version', 'origin']
-            remote_ls = terminal.sh(['flatpak', 'remote-ls', '--user', f'--columns={",".join(h)}', '--updates'])
-            self.remote_ls_cache.extend( flatpak._parse_output(remote_ls, h, False) )
+            self.remote_ls_updatable_cache.extend( flatpak.remote_ls(updates_only=True) )
