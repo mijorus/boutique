@@ -217,6 +217,6 @@ class AppDetails(Gtk.ScrolledWindow):
         if not new_source:
             return
 
-        self.set_app_list_element(
-            self.provider.get_selected_source(self.app_list_element, new_source)
-        )
+        self.provider.get_selected_source(self.app_list_element, new_source)
+        # self.set_app_list_element(
+        # )

@@ -488,7 +488,7 @@ class FlatpakProvider(Provider):
 
     def update_remote_ls_cache(self):
         """Updated the global remote_ls_cache varaible"""
-        if not self.remote_ls_cache:
+        if self.remote_ls_cache is None:
             self.remote_ls_cache = []
             terminal.sh(['flatpak', 'update', '--appstream'])
 
