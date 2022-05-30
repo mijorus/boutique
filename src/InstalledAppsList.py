@@ -34,8 +34,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.refresh_list()
 
+        # updates row
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
         self.updates_row_list: Optional[Gtk.ListBox] = None
+        self.updates_revealter = Gtk.Revealer(child=self.updates_row, transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN, reveal_child=False)
 
         updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER, margin_bottom=5)
 
@@ -48,13 +50,12 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         updates_title_row.append(self.update_all_btn)
         self.updates_row.append(updates_title_row)
 
+        # title row
         title_row = Gtk.Box(margin_bottom=5)
         title_row.append( Gtk.Label(label='Installed applications', css_classes=['title-2']) )
-        
-        self.main_box.append(self.filter_entry)
-        self.main_box.append(self.updates_row)
-        self.main_box.append(title_row)
-        self.main_box.append(self.installed_apps_list_slot)
+
+        for el in [self.filter_entry, self.updates_revealter, title_row, self.installed_apps_list_slot]:
+            self.main_box.append(el)
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
 
@@ -120,8 +121,9 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 self.no_apps_found_row.set_visible(False)
                 break
 
-    def refresh_upgradable_list(self, only: Optional[str]=None):
+    def refresh_upgradable_thread(self, only: Optional[str]=None):
         """Runs the background task to check for app updates"""
+        self.updates_revealter.set_reveal_child(True)
         self.updates_title_label.set_label('Searching for updates...')
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 
@@ -156,17 +158,16 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
                 row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
 
-        self.updates_row.set_visible(upgradable > 0)
+        self.updates_revealter.set_reveal_child(upgradable > 0)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
         self.updates_title_label.set_label('Avaiable updates')
-        # self.installed_apps_list.invalidate_filter()
         self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only: Optional[str]=None):
         if self.updates_row_list:
             self.updates_row.remove(self.updates_row_list)
 
-        thread = threading.Thread(target=self.refresh_upgradable_list, args=(only, ))
+        thread = threading.Thread(target=self.refresh_upgradable_thread, args=(only, ))
         thread.start()
 
     def after_update_all(self, result: bool, prov: str):
