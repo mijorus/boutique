@@ -6,7 +6,7 @@ from .models.AppListElement import AppListElement
 from .models.Provider import Provider
 from .providers.providers_list import providers
 from .components.AppListBoxItem import AppListBoxItem
-from .components.CustomComponents import CenteringBox
+from .components.CustomComponents import CenteringBox, NoAppsFoundRow
 
 from gi.repository import Gtk, Adw, GObject, Gio, Gdk
 
@@ -96,13 +96,7 @@ class BrowseApps(Gtk.ScrolledWindow):
 
 
         if not result:
-            list_row = Gtk.Label(
-                label='No apps found',
-                margin_top=20,
-                margin_bottom=20,
-            )
-
-            self.search_results.append(list_row)
+            self.search_results.append(NoAppsFoundRow())
 
         else:
             def load_icon(row):

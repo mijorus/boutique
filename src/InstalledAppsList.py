@@ -8,6 +8,7 @@ from .providers.providers_list import providers
 from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
 from .components.FilterEntry import FilterEntry
+from .components.CustomComponents import NoAppsFoundRow
 from .components.AppListBoxItem import AppListBoxItem
 from .lib.utils import set_window_cursor, key_in_dict
 
@@ -25,10 +26,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list_slot = Gtk.Box()
         self.installed_apps_list: Optional[Gtk.ListBox] = None
         self.installed_apps_list_rows: List[Gtk.ListBoxRow] = []
-        self.no_apps_found_row = Gtk.ListBoxRow(
-            child=Gtk.Label(label="No apps found", css_classes=['app-listbox-item'], margin_bottom=20, margin_top=20), 
-            hexpand=True
-        )
+        self.no_apps_found_row = NoAppsFoundRow()
 
         # Create the filter search bar
         self.filter_query: str = ''
