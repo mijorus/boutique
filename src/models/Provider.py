@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Tuple
 from .AppListElement import AppListElement
 from .Models import AppUpdateElement
 from gi.repository import Gtk, Gio
@@ -11,7 +11,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def is_installed(self, el: AppListElement) -> bool:
+    def is_installed(self, el: AppListElement) -> Tuple[bool, AppListElement]:
         pass
 
     @abstractmethod

@@ -161,7 +161,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         self.updates_revealter.set_reveal_child(upgradable > 0)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
-        self.updates_title_label.set_label('Avaiable updates')
+        self.updates_title_label.set_label('Available updates')
         self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only: Optional[str]=None):

@@ -13,7 +13,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def __init__(self):
         super().__init__()
-        self.app_list_element: Optional[AppListElement] = None
+        self.app_list_element: AppListElement = None
         self.active_alt_source: Optional[AppListElement] = None
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=10, margin_bottom=10, margin_start=20, margin_end=20,)
@@ -59,11 +59,17 @@ class AppDetails(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False, selected_source: Optional[str]=None):
+    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False):
         self.app_list_element = el
+        self.active_alt_source = None
         self.local_file = local_file
 
         self.provider = providers[el.provider]
+        is_installed, alt_list_element_installed = self.provider.is_installed(self.app_list_element)
+        if is_installed and alt_list_element_installed:
+            self.set_app_list_element(alt_list_element_installed, True)
+            return
+
         self.load_list_element_details(el, load_icon_from_network)
 
         app_sources = self.provider.get_app_sources(self.app_list_element)
@@ -74,32 +80,34 @@ class AppDetails(Gtk.ScrolledWindow):
             self.source_selector.disconnect(self.source_selector_hdlr)    
 
         if len( list(app_sources.items()) ) > 1:
+            self.source_selector.set_visible(True)
             for remote, title in app_sources.items():
                 self.source_selector.append(remote, f'Install from: {title}')
 
-            if selected_source:
-                self.source_selector.set_active_id( selected_source )
-            else:
-                self.source_selector.set_active_id( list(app_sources.items())[0][0] )
+            self.source_selector.set_active_id( list(app_sources.items())[0][0] )
 
             get_application_window().titlebar.set_title_widget(self.source_selector)
+        else:
+            self.source_selector.set_visible(False)
 
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
 
         self.update_installation_status(check_installed=True)
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
-    def set_alt_source(self, el: AppListElement, selected_source: str,  load_icon_from_network=False):
+    def set_alt_source(self, el: AppListElement, selected_source=None,  load_icon_from_network=False):
         self.active_alt_source = el
+        print(el.extra_data['origin'])
         self.load_list_element_details(el, load_icon_from_network)
 
-        app_sources = self.provider.get_app_sources(self.app_list_element)
         self.install_button_label_info = None
 
-        self.source_selector.set_active_id( selected_source )
-        self.update_installation_status(check_installed=True)
+        if selected_source:
+            self.source_selector.set_active_id( selected_source )
+            self.update_installation_status(check_installed=True)
+
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.active_alt_source)
-    
+
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
         
@@ -148,7 +156,7 @@ class AppDetails(Gtk.ScrolledWindow):
             self.update_installation_status()
 
             self.provider.install(
-                self.app_list_element,
+                self.active_alt_source or self.app_list_element,
                 lambda result: self.update_installation_status()
             )
 
@@ -173,35 +181,40 @@ class AppDetails(Gtk.ScrolledWindow):
         self.primary_action_button.set_css_classes([])
         self.secondary_action_button.set_visible(False)
         self.secondary_action_button.set_css_classes([])
+        self.source_selector.set_visible(False)
+
+        active_list_element = self.active_alt_source or self.app_list_element
 
         if check_installed:
             skip_checks = False
             for app_updateable in self.provider.list_updatables(from_cache=True):
-                if app_updateable.id == self.app_list_element.id:
-                    self.app_list_element.installed_status = InstalledStatus.UPDATE_AVAILABLE
+                if app_updateable.id == active_list_element.id:
+                    active_list_element.installed_status = InstalledStatus.UPDATE_AVAILABLE
                     skip_checks = True
                     break
 
             if not skip_checks:
-                if not self.provider.is_installed(self.app_list_element):
-                    self.app_list_element.installed_status = InstalledStatus.NOT_INSTALLED
+                is_installed, alt_list_element_installed = self.provider.is_installed(active_list_element)
+                if not is_installed:
+                    active_list_element.installed_status = InstalledStatus.NOT_INSTALLED
                 else:
-                    self.app_list_element.installed_status = InstalledStatus.INSTALLED
+                    active_list_element.installed_status = InstalledStatus.INSTALLED
 
-        if self.app_list_element.installed_status == InstalledStatus.INSTALLED:
+        if active_list_element.installed_status == InstalledStatus.INSTALLED:
             self.secondary_action_button.set_label('Open')
             self.secondary_action_button.set_visible(True)
 
             self.primary_action_button.set_label('Uninstall')
             self.primary_action_button.set_css_classes(['destructive-action'])
 
-        elif self.app_list_element.installed_status == InstalledStatus.UNINSTALLING:
+        elif active_list_element.installed_status == InstalledStatus.UNINSTALLING:
             self.primary_action_button.set_label('Uninstalling...')
 
-        elif self.app_list_element.installed_status == InstalledStatus.INSTALLING:
+        elif active_list_element.installed_status == InstalledStatus.INSTALLING:
             self.primary_action_button.set_label('Installing...')
 
-        elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
+        elif active_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
+            self.source_selector.set_visible(True)
             self.primary_action_button.set_css_classes(['suggested-action'])
 
             if self.install_button_label_info:
@@ -209,7 +222,7 @@ class AppDetails(Gtk.ScrolledWindow):
             else:
                 self.primary_action_button.set_label('Install')
 
-        elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
+        elif active_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
             self.secondary_action_button.set_label('Update')
             self.secondary_action_button.set_css_classes(['suggested-action'])
             self.secondary_action_button.set_visible(True)
@@ -217,7 +230,7 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_label('Uninstall')
             self.primary_action_button.set_css_classes(['destructive-action'])
 
-        elif self.app_list_element.installed_status == InstalledStatus.UPDATING:
+        elif active_list_element.installed_status == InstalledStatus.UPDATING:
             self.primary_action_button.set_label('Updating')
 
     def load_description(self):
@@ -235,7 +248,6 @@ class AppDetails(Gtk.ScrolledWindow):
         if not new_source:
             return
 
-        print(new_source)
         self.set_alt_source(
             self.provider.get_selected_source(self.app_list_element, new_source),
             new_source,

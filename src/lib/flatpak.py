@@ -172,3 +172,21 @@ def remote_ls(updates_only=False, cached=False, origin: Optional[str]=None):
 
     output = sh(command_args)
     return _parse_output(output, h, False)
+
+def get_info(ref: str) -> Dict[str, str]:
+    command_output = sh(['flatpak', 'info', '--user', ref])
+
+    command_output = command_output.split('ID:', maxsplit=2)[1]
+    command_output = 'ID:' + command_output
+
+    output = {}
+    for row in command_output.split('\n'):
+        row = row.strip()
+
+        if not len(row):
+            continue
+    
+        cols = row.split(':', maxsplit=3)
+        output[cols[0].strip().lower()] = cols[1].strip()
+
+    return output

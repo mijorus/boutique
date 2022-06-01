@@ -28,7 +28,27 @@ class FlatpakProvider(Provider):
         ]
 
     def is_installed(self, list_element: AppListElement):
-        return flatpak.is_installed(self.get_ref(list_element))
+        ref = self.get_ref(list_element)
+        i = flatpak.is_installed(ref)
+
+        if not i:
+            return i, None
+
+        flatpak.get_info(ref)
+        installed_origin = flatpak.get_ref_origin(list_element.id)
+
+        if (list_element.extra_data['origin'] != installed_origin):
+            if (list_element.alt_sources):
+                for alt in list_element.alt_sources:
+                    if alt.extra_data['origin'] == installed_origin:
+                        alt_origin_info = flatpak.get_info(ref)
+                        alt.extra_data['version'] = alt_origin_info['version']
+                        return i, alt
+            else:
+                raise Exception('Missing origin ' + installed_origin)
+
+        else:
+            return i, None
 
     def list_installed(self) -> List[AppListElement]:
         output = []
@@ -194,9 +214,6 @@ class FlatpakProvider(Provider):
 
                         app_list_element_sources.append(source_list_element)
 
-                if (app_source['branch'] == 'stable') and (not preselected_app):
-                    preselected_app = source_list_element
-
             if not preselected_app:
                 preselected_app = app_list_element_sources[0]
 
@@ -241,7 +258,6 @@ class FlatpakProvider(Provider):
                 element_remotes.extend(list_element.extra_data['remotes'])
             else:
                 element_remotes.append(list_element.extra_data['origin'])
-            
 
             source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
 
@@ -254,8 +270,11 @@ class FlatpakProvider(Provider):
                 source_row.append( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
 
             source_row.append( LabelStart(label='Available from:', css_classes=['heading']))
-            for r in element_remotes:
-               source_row.append( get_remote_link(r) )
+            if (list_element.installed_status == InstalledStatus.INSTALLED):
+                for r in element_remotes:
+                    source_row.append( get_remote_link(r) )
+            else:
+                source_row.append( get_remote_link(list_element.extra_data['origin']) )
 
             widget.append(source_row)
 
