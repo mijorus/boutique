@@ -188,7 +188,8 @@ class FlatpakProvider(Provider):
                             version=app_source['version'],
                             branch=app_source['branch'],
                             origin=r,
-                            source_id=app_source['source_id']
+                            source_id=app_source['source_id'],
+                            remotes=app_remotes
                         )
 
                         app_list_element_sources.append(source_list_element)

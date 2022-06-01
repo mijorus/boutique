@@ -1,5 +1,6 @@
 import threading
 import time
+from typing import Optional
 from gi.repository import Gtk, GObject, Adw, Gdk, Gio
 from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
@@ -12,7 +13,8 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def __init__(self):
         super().__init__()
-        self.app_list_element = None
+        self.app_list_element: Optional[AppListElement] = None
+        self.active_alt_source: Optional[AppListElement] = None
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=10, margin_bottom=10, margin_start=20, margin_end=20,)
 
@@ -57,17 +59,53 @@ class AppDetails(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False):
+    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False, selected_source: Optional[str]=None):
         self.app_list_element = el
         self.local_file = local_file
 
         self.provider = providers[el.provider]
+        self.load_list_element_details(el, load_icon_from_network)
 
+        app_sources = self.provider.get_app_sources(self.app_list_element)
+        self.install_button_label_info = None
+
+        self.source_selector.remove_all()
+        if self.source_selector_hdlr:
+            self.source_selector.disconnect(self.source_selector_hdlr)    
+
+        if len( list(app_sources.items()) ) > 1:
+            for remote, title in app_sources.items():
+                self.source_selector.append(remote, f'Install from: {title}')
+
+            if selected_source:
+                self.source_selector.set_active_id( selected_source )
+            else:
+                self.source_selector.set_active_id( list(app_sources.items())[0][0] )
+
+            get_application_window().titlebar.set_title_widget(self.source_selector)
+
+        self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
+
+        self.update_installation_status(check_installed=True)
+        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
+
+    def set_alt_source(self, el: AppListElement, selected_source: str,  load_icon_from_network=False):
+        self.active_alt_source = el
+        self.load_list_element_details(el, load_icon_from_network)
+
+        app_sources = self.provider.get_app_sources(self.app_list_element)
+        self.install_button_label_info = None
+
+        self.source_selector.set_active_id( selected_source )
+        self.update_installation_status(check_installed=True)
+        self.provider.load_extra_data_in_appdetails(self.extra_data, self.active_alt_source)
+    
+    def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
-        icon.set_pixel_size(45)
         
         self.details_row.remove(self.icon_slot)
         self.icon_slot = icon
+        icon.set_pixel_size(45)
         self.details_row.prepend(self.icon_slot)
 
         self.title.set_label(cleanhtml(el.name))
@@ -82,25 +120,6 @@ class AppDetails(Gtk.ScrolledWindow):
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
-
-        app_sources = self.provider.get_app_sources(self.app_list_element)
-        self.install_button_label_info = None
-
-        self.source_selector.remove_all()
-        if self.source_selector_hdlr:
-            self.source_selector.disconnect(self.source_selector_hdlr)    
-
-        if len( list(app_sources.items()) ) > 1:
-            for remote, title in app_sources.items():
-                self.source_selector.append(remote, f'Install from: {title}')
-
-            self.source_selector.set_active_id( list(app_sources.items())[0][0] )
-            get_application_window().titlebar.set_title_widget(self.source_selector)
-
-        self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
-
-        self.update_installation_status(check_installed=True)
-        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
@@ -217,6 +236,8 @@ class AppDetails(Gtk.ScrolledWindow):
             return
 
         print(new_source)
-        self.set_app_list_element(
-            self.provider.get_selected_source(self.app_list_element, new_source)
+        self.set_alt_source(
+            self.provider.get_selected_source(self.app_list_element, new_source),
+            new_source,
+            load_icon_from_network=True
         )
