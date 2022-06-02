@@ -77,7 +77,6 @@ class AppDetails(Gtk.ScrolledWindow):
         self.load_list_element_details(el, load_icon_from_network)
         self.install_button_label_info = None
 
-        self.update_installation_status(check_installed=True)
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
         ###
@@ -92,7 +91,7 @@ class AppDetails(Gtk.ScrolledWindow):
             active_source_id = None
             for i, alt_source in enumerate([self.app_list_element, *alt_sources]):
                 source_id, source_title = self.provider.get_source_details(alt_source)
-                self.source_selector.append(source_id, source_title)
+                self.source_selector.append(source_id, f'Install from: {source_title}')
                 if i == 0: active_source_id = source_id
 
             self.source_selector.set_active_id( active_source_id )
@@ -100,7 +99,10 @@ class AppDetails(Gtk.ScrolledWindow):
         else:
             self.source_selector_revealer.set_reveal_child(False)
 
+        ###
+
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
+        self.update_installation_status(check_installed=True)
 
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)

@@ -18,8 +18,9 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
 class FlatpakProvider(Provider):
     def __init__(self):
         self.remote_ls_updatable_cache: Optional[List] = None
-        self.cache_list_updatables: Optional[str] = None
+        self.list_updatables_cache: Optional[str] = None
         self.update_section_cache = None
+        self.list_installed_cache = None
         self.ignored_patterns = [
             'org.gtk.Gtk3theme',
             'org.kde.PlatformTheme',
@@ -330,12 +331,12 @@ class FlatpakProvider(Provider):
         threading.Thread(target=create_log_expander, args=(expander, )).start()
 
     def list_updatables(self, from_cache=False) -> List[AppUpdateElement]:
-        if from_cache and (self.cache_list_updatables is not None):
-            update_output = self.cache_list_updatables
+        if from_cache and (self.list_updatables_cache is not None):
+            update_output = self.list_updatables_cache
         else:
             self.update_remote_ls_updatable_cache()
             update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
-            self.cache_list_updatables = update_output
+            self.list_updatables_cache = update_output
         
         if not '1.\t' in update_output:
             self.refresh_update_section_cache(None)
@@ -356,27 +357,19 @@ class FlatpakProvider(Provider):
                     if (i > 0) and len(col) > 0:
                         cols.append(col)
 
-                app_origin = None
-
-                try:
-                    app_origin = flatpak.is_installed(cols[0])
-                except:
-                    pass
-
                 update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) )
                 app_update_element = AppUpdateElement(cols[0], update_size, None)
                 output.append( app_update_element )
 
-                if app_origin:
-                    for rc in self.remote_ls_updatable_cache:
-                        if rc['application'] == app_update_element.id and rc['origin'] == app_origin:
-                            app_update_element.to_version = rc['version']
-                            break
+                for rc in self.remote_ls_updatable_cache:
+                    if rc['application'] == app_update_element.id:
+                        app_update_element.to_version = rc['version']
+                        break
 
         return output
 
     def update(self, list_element: AppListElement, callback: Callable):
-        self.cache_list_updatables = None
+        self.list_updatables_cache = None
         def update_task(list_element: AppListElement, callback: Callable):
             ref = self.get_ref(list_element)
             success = False
@@ -493,7 +486,7 @@ class FlatpakProvider(Provider):
             self.remote_ls_updatable_cache = []
             terminal.sh(['flatpak', 'update', '--appstream'])
 
-            self.remote_ls_updatable_cache.extend( flatpak.remote_ls(updates_only=True) )
+            self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
 
     def is_updatable(self, app_id: str) -> bool:
         if not self.update_section_cache:
