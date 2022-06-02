@@ -51,7 +51,7 @@ class BrowseApps(Gtk.ScrolledWindow):
         if not hasattr(row, '_app'):
             return 
 
-        self.emit('selected-app', row._app, row._alt_sources)
+        self.emit('selected-app', (row._app, row._alt_sources))
 
     def on_search_entry_activated(self, widget: Gtk.SearchEntry):
         query = widget.get_text()

@@ -75,38 +75,29 @@ class AppDetails(Gtk.ScrolledWindow):
         app_sources = self.provider.get_app_sources(self.app_list_element)
         self.install_button_label_info = None
 
+        self.update_installation_status(check_installed=True)
+        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
+
+    def set_alt_sources(self, alt_sources: list[AppListElement]):
+        self.install_button_label_info = None
+
         self.source_selector.remove_all()
         if self.source_selector_hdlr:
             self.source_selector.disconnect(self.source_selector_hdlr)    
 
-        if len( list(app_sources.items()) ) > 1:
+        print(alt_sources)
+        if alt_sources:
             self.source_selector.set_visible(True)
-            for remote, title in app_sources.items():
-                self.source_selector.append(remote, f'Install from: {title}')
+            for alt_source in alt_sources:
+                self.source_selector.append(alt_source.extra_data['origin'], f'Install from: test')
 
-            self.source_selector.set_active_id( list(app_sources.items())[0][0] )
-
+            self.source_selector.set_active_id( alt_sources[0].extra_data['origin'] )
             get_application_window().titlebar.set_title_widget(self.source_selector)
         else:
             self.source_selector.set_visible(False)
 
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
 
-        self.update_installation_status(check_installed=True)
-        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
-
-    def set_alt_source(self, el: AppListElement, selected_source=None,  load_icon_from_network=False):
-        self.active_alt_source = el
-        print(el.extra_data['origin'])
-        self.load_list_element_details(el, load_icon_from_network)
-
-        self.install_button_label_info = None
-
-        if selected_source:
-            self.source_selector.set_active_id( selected_source )
-            self.update_installation_status(check_installed=True)
-
-        self.provider.load_extra_data_in_appdetails(self.extra_data, self.active_alt_source)
 
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
