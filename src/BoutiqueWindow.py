@@ -95,8 +95,8 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         """Show details for an app from global search"""
         list_element, alt_sources = custom_event
 
-        self.app_details.set_app_list_element(list_element, load_icon_from_network=True)
-        self.app_details.set_alt_sources(alt_sources)
+        self.app_details.set_app_list_element(list_element, load_icon_from_network=True, alt_sources=alt_sources)
+        # self.app_details.set_alt_sources(alt_sources)
         self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         self.container_stack.set_visible_child(self.app_details)
 

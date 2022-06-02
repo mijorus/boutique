@@ -11,7 +11,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def is_installed(self, el: AppListElement) -> Tuple[bool, AppListElement]:
+    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> Tuple[bool, AppListElement]:
         pass
 
     @abstractmethod
@@ -71,9 +71,9 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def get_app_sources(self, list_element: AppListElement) -> Dict[str, str]:
+    def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
         pass
 
     @abstractmethod
-    def get_selected_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
+    def get_source_details(self, list_element: AppListElement) -> tuple[str, str]:
         pass

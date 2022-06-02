@@ -28,7 +28,7 @@ class FlatpakProvider(Provider):
             'org.videolan.VLC.Plugin'
         ]
 
-    def is_installed(self, list_element: AppListElement):
+    def is_installed(self, list_element: AppListElement, alt_sources: list[AppListElement]=[]):
         ref = self.get_ref(list_element)
         i = flatpak.is_installed(ref)
 
@@ -38,8 +38,8 @@ class FlatpakProvider(Provider):
         installed_origin = flatpak.get_ref_origin(list_element.id)
 
         if (list_element.extra_data['origin'] != installed_origin):
-            if (list_element.alt_sources):
-                for alt in list_element.alt_sources:
+            if (alt_sources):
+                for alt in alt_sources:
                     if alt.extra_data['origin'] == installed_origin:
                         alt_origin_info = flatpak.get_info(ref)
                         alt.extra_data['version'] = alt_origin_info['version']
@@ -461,14 +461,6 @@ class FlatpakProvider(Provider):
 
         return list_element
 
-    def get_app_sources(self, list_element):
-        if 'remotes_map' in list_element.extra_data and len(list_element.extra_data['remotes_map']) > 1:
-            return list_element.extra_data['remotes_map']
-        elif 'origin' in list_element.extra_data:
-            return { list_element.extra_data['origin']: list_element.extra_data['origin'] }
-        else:
-            return {}
-
     def show_downgrade_dialog(self, list_element: AppListElement, to_version: str):
         action = 'downgrade' if list_element.installed_status.INSTALLED else 'install'
         dialog = Gtk.MessageDialog(
@@ -481,12 +473,9 @@ class FlatpakProvider(Provider):
 
         dialog.set_modal()
 
-    def get_selected_source(self, list_element: AppListElement, source_id: str) -> AppListElement:
-        if not list_element.alt_sources:
-            return list_element
-
-        for alt_source in list_element.alt_sources:
-            if source_id == alt_source.extra_data['source_id']:
+    def get_selected_source(self, list_elements: list[AppListElement], source_id: str) -> AppListElement:
+        for alt_source in list_elements:
+            if source_id == self.create_source_id(alt_source):
                 remote_ls_items = flatpak.remote_ls(updates_only=False, cached=True, origin=alt_source.extra_data['origin'])
  
                 for rc in remote_ls_items:
@@ -496,7 +485,7 @@ class FlatpakProvider(Provider):
 
                 return alt_source
 
-        return list_element
+        raise Exception('Missing list_element source!')
 
     def update_remote_ls_updatable_cache(self):
         """Updated the global remote_ls_cache varaible"""
@@ -520,3 +509,12 @@ class FlatpakProvider(Provider):
             update_section = update_output.split('1.\t', maxsplit=1)[1]
             update_section = '1.\t' + update_section
             self.update_section_cache = update_section
+    
+    def get_source_details(self, list_element: AppListElement):
+        return (
+            self.create_source_id(list_element), 
+            f"{list_element.extra_data['origin']} ({list_element.extra_data['branch']})"
+        )
+
+    def create_source_id(self, list_element: AppListElement) -> str:
+        return f"{list_element.extra_data['origin']}/{list_element.extra_data['branch']}"

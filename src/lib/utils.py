@@ -60,3 +60,6 @@ def get_application_window() -> Gtk.ApplicationWindow:
     for w in Gtk.Window.list_toplevels():
         if isinstance(w, Gtk.ApplicationWindow):
             return w
+
+def qq(condition, is_true, is_false):
+    return is_true if condition else is_false
