@@ -23,13 +23,13 @@ class BrowseApps(Gtk.ScrolledWindow):
 
         self.search_entry = Gtk.SearchEntry()
         self.search_results: Gtk.ListBox = None
+        self.search_results_items = []
 
         self.search_entry.props.placeholder_text = 'Press "Enter" to search'
         self.search_entry.connect('activate', self.on_search_entry_activated)
 
         self.main_box.append(self.search_entry)
 
-        self.search_results: Gtk.ListBox|None = None
         self.search_results_slot = Gtk.Box(hexpand=True, vexpand=True, orientation=Gtk.Orientation.VERTICAL)
         self.spinner = Gtk.Box(hexpand=True,halign=Gtk.Align.CENTER,margin_top=10,visible=False)
         self.spinner.append(Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
@@ -62,6 +62,11 @@ class BrowseApps(Gtk.ScrolledWindow):
 
         if self.search_results:
             self.search_results_slot.remove(self.search_results)
+
+        for i in self.search_results_items:
+            i.__del__()
+
+        self.search_results_items.clear()
 
         if len(query) < 3:
             return
@@ -112,11 +117,13 @@ class BrowseApps(Gtk.ScrolledWindow):
                 )
 
                 self.search_results.append(list_row)
+                self.search_results_items.append(list_row)
                 load_img_threads.append( threading.Thread(target=lambda r: r.load_icon(from_network=True), args=(list_row, )) )
 
             for t in load_img_threads: t.start()
             for t in load_img_threads: t.join()
 
+        results.clear()
         self.spinner.set_visible(False)
         self.search_results.connect('row-activated', self.on_activated_row)
         self.search_results_slot.append(self.search_results)

@@ -346,25 +346,27 @@ class FlatpakProvider(Provider):
 
         start_pattern = re.compile(r'^([0-9]+\.)')
         output = []
-        for row in self.update_section_cache.split('\n'):
-            row = row.strip()
-            if not re.match(start_pattern, row):
-                break
-            else:
-                cols = []
-                for i, col in enumerate(row.split('\t')):
-                    col = col.strip()
-                    if (i > 0) and len(col) > 0:
-                        cols.append(col)
 
-                update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) )
-                app_update_element = AppUpdateElement(cols[0], update_size, None)
-                output.append( app_update_element )
+        if self.update_section_cache:
+            for row in self.update_section_cache.split('\n'):
+                row = row.strip()
+                if not re.match(start_pattern, row):
+                    break
+                else:
+                    cols = []
+                    for i, col in enumerate(row.split('\t')):
+                        col = col.strip()
+                        if (i > 0) and len(col) > 0:
+                            cols.append(col)
 
-                for rc in self.remote_ls_updatable_cache:
-                    if rc['application'] == app_update_element.id:
-                        app_update_element.to_version = rc['version']
-                        break
+                    update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) )
+                    app_update_element = AppUpdateElement(cols[0], update_size, None)
+                    output.append( app_update_element )
+
+                    for rc in self.remote_ls_updatable_cache:
+                        if rc['application'] == app_update_element.id:
+                            app_update_element.to_version = rc['version']
+                            break
 
         return output
 
@@ -489,19 +491,21 @@ class FlatpakProvider(Provider):
             self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
 
     def is_updatable(self, app_id: str) -> bool:
-        if not self.update_section_cache:
+        if self.update_section_cache == None:
             update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
             self.refresh_update_section_cache(update_output)
 
-        return app_id in self.update_section_cache
+        return (app_id in self.update_section_cache)
 
     def refresh_update_section_cache(self, update_output: Optional[str]):
-        if not update_output:
-            self.update_section_cache = []
-        else:
-            update_section = update_output.split('1.\t', maxsplit=1)[1]
-            update_section = '1.\t' + update_section
-            self.update_section_cache = update_section
+        self.update_section_cache = ''
+
+        if update_output:
+            update_sections = update_output.split('1.\t', maxsplit=1)
+
+            if len(update_sections) > 1:
+                update_section = '1.\t' + update_sections[1]
+                self.update_section_cache = update_section
     
     def get_source_details(self, list_element: AppListElement):
         return (
