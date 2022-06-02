@@ -19,6 +19,7 @@ class FlatpakProvider(Provider):
     def __init__(self):
         self.remote_ls_updatable_cache: Optional[List] = None
         self.cache_list_updatables: Optional[str] = None
+        self.update_section_cache = None
         self.ignored_patterns = [
             'org.gtk.Gtk3theme',
             'org.kde.PlatformTheme',
@@ -34,7 +35,6 @@ class FlatpakProvider(Provider):
         if not i:
             return i, None
 
-        flatpak.get_info(ref)
         installed_origin = flatpak.get_ref_origin(list_element.id)
 
         if (list_element.extra_data['origin'] != installed_origin):
@@ -346,14 +346,14 @@ class FlatpakProvider(Provider):
             self.cache_list_updatables = update_output
         
         if not '1.\t' in update_output:
+            self.refresh_update_section_cache(None)
             return []
 
-        update_section = update_output.split('1.\t', maxsplit=1)[1]
-        update_section = '1.\t' + update_section
+        self.refresh_update_section_cache(update_output)
 
         start_pattern = re.compile(r'^([0-9]+\.)')
         output = []
-        for row in update_section.split('\n'):
+        for row in self.update_section_cache.split('\n'):
             row = row.strip()
             if not re.match(start_pattern, row):
                 break
@@ -367,7 +367,7 @@ class FlatpakProvider(Provider):
                 app_origin = None
 
                 try:
-                    app_origin = terminal.sh(f'flatpak info {cols[0]} -o', True)
+                    app_origin = flatpak.is_installed(cols[0])
                 except:
                     pass
 
@@ -384,6 +384,7 @@ class FlatpakProvider(Provider):
         return output
 
     def update(self, list_element: AppListElement, callback: Callable):
+        self.cache_list_updatables = None
         def update_task(list_element: AppListElement, callback: Callable):
             ref = self.get_ref(list_element)
             success = False
@@ -391,7 +392,6 @@ class FlatpakProvider(Provider):
             try:
                 terminal.sh(['flatpak', 'update', '--user', '--noninteractive', ref])
                 list_element.set_installed_status(InstalledStatus.INSTALLED)
-                self.cache_list_updatables = None
                 self.remote_ls_updatable_cache = None
                 success = True
             except Exception as e:
@@ -513,3 +513,18 @@ class FlatpakProvider(Provider):
             terminal.sh(['flatpak', 'update', '--appstream'])
 
             self.remote_ls_updatable_cache.extend( flatpak.remote_ls(updates_only=True) )
+
+    def is_updatable(self, app_id: str) -> bool:
+        if not self.update_section_cache:
+            update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
+            self.refresh_update_section_cache(update_output)
+
+        return app_id in self.update_section_cache
+
+    def refresh_update_section_cache(self, update_output: Optional[str]):
+        if not update_output:
+            self.update_section_cache = []
+        else:
+            update_section = update_output.split('1.\t', maxsplit=1)[1]
+            update_section = '1.\t' + update_section
+            self.update_section_cache = update_section

@@ -59,6 +59,10 @@ class Provider(ABC):
         pass
 
     @abstractmethod
+    def is_updatable(self, app_id: str) -> bool:
+        pass
+
+    @abstractmethod
     def install_file(self, filename: Gio.File, callback: Callable[[bool], None]) -> bool:
         pass
 

@@ -36,6 +36,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.refresh_list()
 
         # updates row
+        self.updates_fetched = False
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
         self.updates_row_list: Optional[Gtk.ListBox] = None
         self.updates_revealter = Gtk.Revealer(child=self.updates_row, transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN, reveal_child=False)
@@ -60,7 +61,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
 
-        self.upgradable_cache: Dict[str, AppUpdateElement] = {}
         self.refresh_upgradable()
         self.set_child(clamp)
 
@@ -124,7 +124,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
     def refresh_upgradable_thread(self, only: Optional[str]=None):
         """Runs the background task to check for app updates"""
-        self.updates_revealter.set_reveal_child(True)
+        self.updates_revealter.set_reveal_child(not self.updates_fetched)
         self.updates_title_label.set_label('Searching for updates...')
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 
@@ -138,12 +138,12 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             if only is not None and p != only:
                 continue
 
-            self.upgradable_cache[p] = provider.list_updatables() if (not p in self.upgradable_cache) else self.upgradable_cache[p]
+            updatable_elements = provider.list_updatables(from_cache=True) 
             self.updates_row_list.remove(spinner)
 
             for row in self.installed_apps_list_rows:
                 row_is_upgrdble = False
-                for upg in self.upgradable_cache[p]:
+                for upg in updatable_elements:
                     if row._app.id == upg.id:
                         upgradable += 1
                         row_is_upgrdble = True
@@ -159,6 +159,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
                 row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
 
+        self.updates_fetched = True
         self.updates_revealter.set_reveal_child(upgradable > 0)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
         self.updates_title_label.set_label('Available updates')
@@ -172,8 +173,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         thread.start()
 
     def after_update_all(self, result: bool, prov: str):
-        self.upgradable_cache.clear()
-
         if result:
             self.refresh_upgradable(only=prov)
 

@@ -187,11 +187,9 @@ class AppDetails(Gtk.ScrolledWindow):
 
         if check_installed:
             skip_checks = False
-            for app_updateable in self.provider.list_updatables(from_cache=True):
-                if app_updateable.id == active_list_element.id:
-                    active_list_element.installed_status = InstalledStatus.UPDATE_AVAILABLE
-                    skip_checks = True
-                    break
+            if self.provider.is_updatable(active_list_element.id):
+                active_list_element.installed_status = InstalledStatus.UPDATE_AVAILABLE
+                skip_checks = True
 
             if not skip_checks:
                 is_installed, alt_list_element_installed = self.provider.is_installed(active_list_element)
