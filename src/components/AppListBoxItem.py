@@ -8,10 +8,11 @@ from ..models.AppListElement import AppListElement
 from ..providers.providers_list import providers
 
 class AppListBoxItem(Gtk.ListBoxRow):
-    def __init__(self, list_element: AppListElement, load_icon_from_network=False, **kwargs):
+    def __init__(self, list_element: AppListElement, load_icon_from_network=False, alt_sources: List[AppListElement]=[], **kwargs):
         super().__init__(**kwargs)
 
         self._app: AppListElement = list_element
+        self._alt_sources: List[AppListElement]= alt_sources
 
         col = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         col.set_css_classes(['app-listbox-item'])
@@ -34,7 +35,7 @@ class AppListBoxItem(Gtk.ListBoxRow):
         app_details_box.append( Gtk.Label(label=cleanhtml(desc), halign=Gtk.Align.START, lines=1, max_width_chars=100, ellipsize=Pango.EllipsizeMode.END) )
 
         self.update_version = Gtk.Label(
-            label='0.10 > 0.20',
+            label='',
             margin_top=3,
             halign=Gtk.Align.START,
             css_classes=['subtitle'],

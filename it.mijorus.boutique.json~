@@ -88,8 +88,6 @@
         }
     ],
     "build-options" : {
-        "env" : {
-            "DEBUG_MODE" : "dev"
-        }
+        "env" : {        }
     }
 }

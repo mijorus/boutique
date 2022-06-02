@@ -1,4 +1,5 @@
 
+from .AppListElement import AppListElement
 from typing import Optional
 
 class FlatpakHistoryElement():
@@ -16,3 +17,8 @@ class AppUpdateElement():
 
         for k, v in kwargs.items():
             self.extra_data[k] = v
+
+class SearchResultsItems():
+    def __init__(self, app_id: str, list_elements: list[AppListElement]):
+        self.id: str = app_id
+        self.list_elements: list[AppListElement] = list_elements

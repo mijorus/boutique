@@ -148,7 +148,7 @@ class FlatpakProvider(Provider):
         thread = threading.Thread(target=install_thread, args=(list_element, callback, ), daemon=True)
         thread.start()
 
-    def search(self, query: str):
+    def search(self, query: str) -> List[AppListElement]:
         installed_apps = flatpak.apps_list()
         result = flatpak.search(query)
 
@@ -208,20 +208,12 @@ class FlatpakProvider(Provider):
                             version=app_source['version'],
                             branch=app_source['branch'],
                             origin=r,
+                            remote=r,
                             source_id=app_source['source_id'],
                             remotes=app_remotes
                         )
 
-                        app_list_element_sources.append(source_list_element)
-
-            if not preselected_app:
-                preselected_app = app_list_element_sources[0]
-
-            preselected_app.alt_sources = app_list_element_sources
-            preselected_app.extra_data['remotes_map'] = remotes_map
-            preselected_app.extra_data['remotes'] = app_remotes
-            output.append(preselected_app)
-
+                        output.append(source_list_element)
         return output
 
     def get_long_description(self, el: AppListElement) -> str:
