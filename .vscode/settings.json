@@ -6,5 +6,6 @@
         "label": "Label",
         "task": "prova",
         "tooltip": "Optional tooltip to show when hovering over the button (defaults to task name)",
-    }
+    },
+    "terminal.integrated.defaultProfile.linux": "bash"
 }

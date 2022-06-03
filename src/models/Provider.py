@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable, Dict, Tuple
+from typing import List, Callable, Dict, Tuple, Optional
 from .AppListElement import AppListElement
 from .Models import AppUpdateElement
 from gi.repository import Gtk, Gio
 
 class Provider(ABC):
+    # refresh_installed_status_callback: Callable
 
     @abstractmethod
     def list_installed(self) -> List[AppListElement]:
@@ -76,4 +77,8 @@ class Provider(ABC):
 
     @abstractmethod
     def get_source_details(self, list_element: AppListElement) -> tuple[str, str]:
+        pass
+    
+    @abstractmethod
+    def set_refresh_installed_status_callback(self, callback: Optional[Callable]):
         pass

@@ -11,6 +11,9 @@ from .lib.utils import cleanhtml, key_in_dict, set_window_cursor, get_applicatio
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
+    __gsignals__ = {
+      "refresh-updatable": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+    }
 
     def __init__(self):
         super().__init__()
@@ -103,6 +106,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
         self.update_installation_status(check_installed=True)
+        self.provider.set_refresh_installed_status_callback(self.provider_refresh_installed_status)
 
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
@@ -244,3 +248,7 @@ class AppDetails(Gtk.ScrolledWindow):
             load_icon_from_network=True,
             alt_sources=sources
         )
+
+    def provider_refresh_installed_status(self, final=False):
+        self.update_installation_status()
+        if final: self.emit('refresh-updatable')

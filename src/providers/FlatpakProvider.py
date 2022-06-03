@@ -7,16 +7,17 @@ import requests
 import html2text
 
 from ..lib import flatpak, terminal
-from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List
-from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject
 
 class FlatpakProvider(Provider):
     def __init__(self):
+        self.refresh_installed_status_callback: Callable = None
         self.remote_ls_updatable_cache: Optional[List] = None
         self.list_updatables_cache: Optional[str] = None
         self.update_section_cache = None
@@ -313,10 +314,10 @@ class FlatpakProvider(Provider):
                 row.append(col)
 
                 col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
-                install_label = 'Downgrade' if expander._app.installed_status == InstalledStatus.INSTALLED else 'Install'
+                install_label = qq(expander._app.installed_status == InstalledStatus.INSTALLED, 'Downgrade', 'Install')
                 install_btn = Gtk.Button(css_classes=['suggested-action'], label=install_label)
                 # install_btn._app = list
-                install_btn.connect('clicked', self.show_downgrade_dialog)
+                install_btn.connect('clicked', self.show_downgrade_dialog, {'commit': h.commit, 'list_element': expander._app})
                 col.append(install_btn)
                 row.append(col)
 
@@ -456,17 +457,32 @@ class FlatpakProvider(Provider):
 
         return list_element
 
-    def show_downgrade_dialog(self, list_element: AppListElement, to_version: str):
-        action = 'downgrade' if list_element.installed_status.INSTALLED else 'install'
-        dialog = Gtk.MessageDialog(
-            text=f'Do you really want to {action} "{list_element.name}" ?',
-            secondary_text=f'An older version might contain bugs and could have issues with newer configuration files. If you decide to proceed, {to_version} will be installed.'
-        )
+    def show_downgrade_dialog(self, button: Gtk.Button, data: dict):
+        list_element: AppListElement = data['list_element']
 
-        dialog.add_button(Gtk.Button(label="Yes"))
-        dialog.add_button(Gtk.Button(label="No"))
+        def install_old_version():
+            terminal.sh(['flatpak', 'kill', list_element.id], hide_err=True, return_stderr=True)
+            list_element.installed_status = InstalledStatus.UPDATING
+            if self.refresh_installed_status_callback: self.refresh_installed_status_callback()
+            
+            terminal.sh(['flatpak', 'update', f'--commit={data["commit"]}', '-y', '--noninteractive', list_element.id], return_stderr=False)
+            list_element.installed_status = InstalledStatus.INSTALLED
 
-        dialog.set_modal()
+            if self.refresh_installed_status_callback: self.refresh_installed_status_callback(final=True)
+
+        # action = qq(data['list_element'].installed_status.INSTALLED, 'downgrade', 'install')
+        # dialog = Gtk.MessageDialog.new(
+        #     get_application_window(),
+        #     Gtk.DialogFlags.MODAL,
+        #     Gtk.MessageType.QUESTION,
+        #     Gtk.ButtonsType.YES_NO,
+        #     f'Do you really want to {action} "{data["list_element"].name}" ?',
+        #     # secondary_text=f'An older version might contain bugs and could have issues with newer configuration files. If you decide to proceed, {data["to_version"]} will be installed.'
+        # )
+
+        # dialog.add_button("Yes", 1)
+        # dialog.add_button("No", 0)
+        threading.Thread(target=install_old_version, daemon=True).start()
 
     def get_selected_source(self, list_elements: list[AppListElement], source_id: str) -> AppListElement:
         for alt_source in list_elements:
@@ -515,3 +531,6 @@ class FlatpakProvider(Provider):
 
     def create_source_id(self, list_element: AppListElement) -> str:
         return f"{list_element.extra_data['origin']}/{list_element.extra_data['branch']}"
+
+    def set_refresh_installed_status_callback(self, callback: Callable):
+        self.refresh_installed_status_callback = callback
