@@ -17,7 +17,7 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject
 
 class FlatpakProvider(Provider):
     def __init__(self):
-        self.refresh_installed_status_callback: Callable = None
+        self.refresh_installed_status_callback: Optional[Callable] = None
         self.remote_ls_updatable_cache: Optional[List] = None
         self.list_updatables_cache: Optional[str] = None
         self.update_section_cache = None
@@ -532,5 +532,5 @@ class FlatpakProvider(Provider):
     def create_source_id(self, list_element: AppListElement) -> str:
         return f"{list_element.extra_data['origin']}/{list_element.extra_data['branch']}"
 
-    def set_refresh_installed_status_callback(self, callback: Callable):
+    def set_refresh_installed_status_callback(self, callback: Optional[Callable]):
         self.refresh_installed_status_callback = callback
