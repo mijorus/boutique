@@ -25,10 +25,19 @@ class BrowseApps(Gtk.ScrolledWindow):
         self.search_results: Gtk.ListBox = None
         self.search_results_items = []
 
-        self.search_entry.props.placeholder_text = 'Press "Enter" to search'
+        self.search_placeholder_text = 'Press "Enter" to search'
+        self.search_entry.props.placeholder_text = self.search_placeholder_text
         self.search_entry.connect('activate', self.on_search_entry_activated)
+        self.search_entry.connect('search-changed', self.on_search_entry_changed)
 
         self.main_box.append(self.search_entry)
+        self.search_tip_revealer = Gtk.Revealer(
+            transition_type=Gtk.RevealerTransitionType.SLIDE_UP,
+            child=Gtk.Label(label=self.search_placeholder_text, opacity=0.7),
+            reveal_child=False
+        )
+
+        self.main_box.append(self.search_tip_revealer)
 
         self.search_results_slot = Gtk.Box(hexpand=True, vexpand=True, orientation=Gtk.Orientation.VERTICAL)
         self.spinner = Gtk.Box(hexpand=True,halign=Gtk.Align.CENTER,margin_top=10,visible=False)
@@ -68,7 +77,7 @@ class BrowseApps(Gtk.ScrolledWindow):
 
         self.search_results_items.clear()
 
-        if len(query) < 3:
+        if not len(query):
             return
 
         widget.set_text('')
@@ -80,6 +89,12 @@ class BrowseApps(Gtk.ScrolledWindow):
         utils.set_window_cursor('wait')
         self.search_entry.set_editable(False)
         threading.Thread(target=self.populate_search, args=(query, )).start()
+
+    def on_search_entry_changed(self, widget):
+        query = widget.get_text()
+
+        if not self.search_results_slot_placeholder.get_visible():
+            self.search_tip_revealer.set_reveal_child(len(query) > 0)
 
     def populate_search(self, query: str):
         """Async function to populate the listbox without affecting the main thread"""
