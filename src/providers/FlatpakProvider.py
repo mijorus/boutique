@@ -315,7 +315,7 @@ class FlatpakProvider(Provider):
 
                 col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
                 install_label = qq(expander._app.installed_status == InstalledStatus.INSTALLED, 'Downgrade', 'Install')
-                install_btn = Gtk.Button(css_classes=['suggested-action'], label=install_label)
+                install_btn = Gtk.Button(label=install_label)
                 # install_btn._app = list
                 install_btn.connect('clicked', self.show_downgrade_dialog, {'commit': h.commit, 'list_element': expander._app})
                 col.append(install_btn)
