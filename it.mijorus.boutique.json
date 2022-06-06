@@ -6,14 +6,13 @@
     "command" : "boutique",
     "finish-args" : [
         "--share=network",
-        "--share=ipc",
+        "--socket=wayland",
         "--socket=fallback-x11",
         "--device=dri",
         "--system-talk-name=org.freedesktop.Flatpak",
         "--talk-name=org.freedesktop.Flatpak",
         "--filesystem=~/.local/share/flatpak",
-        "--filesystem=home",
-        "--socket=wayland"
+        "--filesystem=home"
     ],
     "cleanup" : [
         "/include",
@@ -86,10 +85,5 @@
                 }
             ]
         }
-    ],
-    "build-options" : {
-        "env" : {
-            "DEBUG_MODE" : "dev"
-        }
-    }
+    ]
 }
