@@ -126,7 +126,6 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         if self.app_lists_stack.get_visible_child() == self.installed_stack:
             if self.container_stack.get_visible_child() == self.app_details:
                 self.titlebar.set_title_widget(self.view_title_widget)
-                self.installed_apps_list.refresh_upgradable(from_cache=True)
                 self.on_show_installed_list()
 
         elif self.app_lists_stack.get_visible_child() == self.browse_stack:
