@@ -361,7 +361,8 @@ class FlatpakProvider(Provider):
                         if (i > 0) and len(col) > 0:
                             cols.append(col)
 
-                    update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) )
+
+                    update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) ) if len(cols) > 3 else 0
                     app_update_element = AppUpdateElement(cols[0], update_size, None)
                     output.append( app_update_element )
 
@@ -471,10 +472,11 @@ class FlatpakProvider(Provider):
             terminal.sh(['flatpak', 'update', f'--commit={data["commit"]}', '-y', '--noninteractive', list_element.id], return_stderr=False)
             list_element.installed_status = InstalledStatus.INSTALLED
 
+            self.do_updates_need_refresh = True
             if self.refresh_installed_status_callback: self.refresh_installed_status_callback(final=True)
 
-        # action = qq(data['list_element'].installed_status.INSTALLED, 'downgrade', 'install')
-        # dialog = Gtk.MessageDialog.new(
+        action = qq(data['list_element'].installed_status.INSTALLED, 'downgrade', 'install')
+        # dialog = Gtk.MessageDialog(
         #     get_application_window(),
         #     Gtk.DialogFlags.MODAL,
         #     Gtk.MessageType.QUESTION,
@@ -482,6 +484,7 @@ class FlatpakProvider(Provider):
         #     f'Do you really want to {action} "{data["list_element"].name}" ?',
         #     # secondary_text=f'An older version might contain bugs and could have issues with newer configuration files. If you decide to proceed, {data["to_version"]} will be installed.'
         # )
+
 
         # dialog.add_button("Yes", 1)
         # dialog.add_button("No", 0)
