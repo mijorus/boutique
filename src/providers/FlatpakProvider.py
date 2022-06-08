@@ -22,6 +22,7 @@ class FlatpakProvider(Provider):
         self.list_updatables_cache: Optional[str] = None
         self.update_section_cache = None
         self.list_installed_cache = None
+        self.do_updates_need_refresh = True
         self.ignored_patterns = [
             'org.gtk.Gtk3theme',
             'org.kde.PlatformTheme',
@@ -368,7 +369,8 @@ class FlatpakProvider(Provider):
                         if rc['application'] == app_update_element.id:
                             app_update_element.to_version = rc['version']
                             break
-
+        
+        self.do_updates_need_refresh = False
         return output
 
     def update(self, list_element: AppListElement, callback: Callable):
@@ -381,6 +383,7 @@ class FlatpakProvider(Provider):
                 terminal.sh(['flatpak', 'update', '--user', '--noninteractive', ref])
                 list_element.set_installed_status(InstalledStatus.INSTALLED)
                 self.remote_ls_updatable_cache = None
+                self.do_updates_need_refresh = True
                 success = True
             except Exception as e:
                 print(e)
@@ -534,3 +537,6 @@ class FlatpakProvider(Provider):
 
     def set_refresh_installed_status_callback(self, callback: Optional[Callable]):
         self.refresh_installed_status_callback = callback
+
+    def updates_need_refresh(self) -> bool:
+        return self.do_updates_need_refresh

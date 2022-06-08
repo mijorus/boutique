@@ -125,6 +125,18 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
     def refresh_upgradable_thread(self, only_provider: Optional[str]=None, from_cache=False):
         """Runs the background task to check for app updates"""
+        refresh = False
+        for p, provider in providers.items():
+            if provider.updates_need_refresh():
+                refresh = True
+                break
+
+        if not refresh:
+            return
+
+        if self.updates_row_list:
+            self.updates_row.remove(self.updates_row_list)
+
         if self.installed_apps_list:
             self.installed_apps_list.set_opacity(0.5)
 
@@ -171,9 +183,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only_provider: Optional[str]=None, from_cache=False):
-        if self.updates_row_list:
-            self.updates_row.remove(self.updates_row_list)
-
         thread = threading.Thread(target=self.refresh_upgradable_thread, args=(only_provider, from_cache, ))
         thread.start()
 

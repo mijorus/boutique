@@ -52,6 +52,10 @@ class Provider(ABC):
         pass
 
     @abstractmethod
+    def updates_need_refresh(self) -> bool:
+        pass
+
+    @abstractmethod
     def run(self, el: AppListElement):
         pass
 
