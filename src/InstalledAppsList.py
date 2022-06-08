@@ -27,7 +27,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list_slot = Gtk.Box()
         self.installed_apps_list: Optional[Gtk.ListBox] = None
         self.installed_apps_list_rows: List[Gtk.ListBoxRow] = []
-        self.no_apps_found_row = NoAppsFoundRow()
+        self.no_apps_found_row = NoAppsFoundRow(visible=False)
 
         # Create the filter search bar
         self.filter_query: str = ''
@@ -92,6 +92,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 self.installed_apps_list.append(list_row)
 
         self.installed_apps_list.append(self.no_apps_found_row)
+        self.no_apps_found_row.set_visible(False)
         self.installed_apps_list_slot.append(self.installed_apps_list)
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
         set_window_cursor('default')
