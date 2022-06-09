@@ -15,7 +15,7 @@ from .lib.utils import set_window_cursor, key_in_dict
 
 class InstalledAppsList(Gtk.ScrolledWindow):
     __gsignals__ = {
-      "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
+        "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
     }
 
     def __init__(self):
@@ -124,7 +124,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 self.no_apps_found_row.set_visible(False)
                 break
 
-    def refresh_upgradable_thread(self, only_provider: Optional[str]=None, from_cache=False):
+    def _refresh_upgradable_thread(self, only_provider: Optional[str]=None):
         """Runs the background task to check for app updates"""
         refresh = False
         for p, provider in providers.items():
@@ -155,7 +155,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             if only_provider is not None and p != only_provider:
                 continue
 
-            updatable_elements = provider.list_updatables(from_cache=from_cache) 
+            updatable_elements = provider.list_updatables() 
             self.updates_row_list.remove(spinner)
 
             for row in self.installed_apps_list_rows:
@@ -183,13 +183,13 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.updates_title_label.set_label('Available updates')
         self.trigger_filter_list(self.filter_entry)
 
-    def refresh_upgradable(self, only_provider: Optional[str]=None, from_cache=False):
-        thread = threading.Thread(target=self.refresh_upgradable_thread, args=(only_provider, from_cache, ))
+    def refresh_upgradable(self, only_provider: Optional[str]=None):
+        thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ))
         thread.start()
 
     def after_update_all(self, result: bool, prov: str):
         if result:
-            self.refresh_upgradable(only_provider=prov, from_cache=False)
+            self.refresh_upgradable(only_provider=prov)
 
             if self.updates_row_list and prov == [*providers.keys()][-1]:
                 self.updates_row_list.set_opacity(1)

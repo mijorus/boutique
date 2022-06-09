@@ -333,8 +333,8 @@ class FlatpakProvider(Provider):
 
         threading.Thread(target=create_log_expander, args=(expander, )).start()
 
-    def list_updatables(self, from_cache=False) -> List[AppUpdateElement]:
-        if from_cache and (self.list_updatables_cache is not None):
+    def list_updatables(self) -> List[AppUpdateElement]:
+        if not self.do_updates_need_refresh and (self.list_updatables_cache is not None):
             update_output = self.list_updatables_cache
         else:
             self.update_remote_ls_updatable_cache()
@@ -406,13 +406,13 @@ class FlatpakProvider(Provider):
 
             try:
                 terminal.sh(['flatpak', 'update', '--user', '-y', '--noninteractive'])
+                self.do_updates_need_refresh = True
                 success = True
             except Exception as e:
                 print(e)
 
             if callback:
                 callback(success, 'flatpak')
-
         threading.Thread(target=update_task, daemon=True, args=(callback, )).start()
 
     def can_install_file(self, file: Gio.File):

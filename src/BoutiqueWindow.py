@@ -71,7 +71,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         
         # Show details of an installed app
         self.installed_apps_list.connect('selected-app', self.on_selected_installed_app)
-        self.app_details.connect('refresh-updatable', lambda _: self.installed_apps_list.refresh_upgradable(None))
+        self.app_details.connect('refresh-updatable', lambda _: self.installed_apps_list.refresh_upgradable())
         # Show details of an app from global search
         self.browse_apps.connect('selected-app', self.on_selected_browsed_app)
         
@@ -113,7 +113,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.left_button.set_visible(False)
 
         self.installed_apps_list.refresh_list()
-        # self.installed_apps_list.refresh_upgradable(from_cache=True)
+        self.installed_apps_list.refresh_upgradable()
         self.container_stack.set_visible_child(self.app_lists_stack)
 
     def on_show_browsed_list(self, source: Gtk.Widget=None, _=None):

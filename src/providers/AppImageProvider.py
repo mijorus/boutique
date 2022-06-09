@@ -44,7 +44,7 @@ class AppImageProvider(Provider):
     def load_extra_data_in_appdetails(self, widget: Gtk.Widget, el: AppListElement):
         pass
 
-    def list_updatables(self, from_cache=False) -> List[AppUpdateElement]:
+    def list_updatables(self) -> List[AppUpdateElement]:
         pass
 
     def update(self, el: AppListElement, callback: Callable[[bool], None]):
