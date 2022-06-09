@@ -5,6 +5,7 @@ import urllib
 import re
 import requests
 import html2text
+import subprocess
 
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
@@ -362,7 +363,7 @@ class FlatpakProvider(Provider):
                             cols.append(col)
 
 
-                    update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) ) if len(cols) > 3 else 0
+                    update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) ) if len(cols) > 3 else '0'
                     app_update_element = AppUpdateElement(cols[0], update_size, None)
                     output.append( app_update_element )
 
