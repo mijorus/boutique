@@ -36,6 +36,8 @@ class BoutiqueApplication(Adw.Application):
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
         self.create_action('preferences', self.on_preferences_action)
+        self.create_action('open_file', self.on_open_file_chooser)
+        self.win = None
 
     def do_startup(self):
         Adw.Application.do_startup(self)
@@ -50,12 +52,12 @@ class BoutiqueApplication(Adw.Application):
         We raise the application's main window, creating it if
         necessary.
         """
-        win = self.props.active_window
+        self.win = self.props.active_window
 
-        if not win:
-            win = BoutiqueWindow(application=self)
+        if not self.win:
+            self.win = BoutiqueWindow(application=self)
 
-        win.present()
+        self.win.present()
 
     def do_open(self, files: list[Gio.File], n_files: int, _):
         self.do_activate()
@@ -89,6 +91,17 @@ class BoutiqueApplication(Adw.Application):
         if shortcuts:
             self.set_accels_for_action(f"app.{name}", shortcuts)
 
+    def on_open_file_chooser(self, widget, _):
+        if not self.win:
+            return
+        
+        dialog = Gtk.FileChooserDialog(
+            title='Open a file',
+            action=Gtk.FileChooserAction.OPEN,
+            transient_for=self.win
+        )
+
+        dialog.show()
 
 def main(version):
     """The application's entry point."""

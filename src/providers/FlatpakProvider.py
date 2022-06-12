@@ -423,6 +423,7 @@ class FlatpakProvider(Provider):
         def install_ref(path):
             log('installing ', path)
             terminal.sh(['flatpak', 'install', '--from', path, '--noninteractive', '--user'])
+            if callback: callback(True)
             log('Installed!')
 
         threading.Thread(target=install_ref, args=(file.get_path(), ), daemon=True).start()

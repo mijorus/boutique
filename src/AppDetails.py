@@ -131,6 +131,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
+            print(p)
             if provider.can_install_file(file):
                 list_element = provider.create_list_element_from_file(file)
                 self.set_app_list_element(list_element, True, True)
@@ -155,10 +156,16 @@ class AppDetails(Gtk.ScrolledWindow):
             self.app_list_element.set_installed_status(InstalledStatus.INSTALLING)
             self.update_installation_status()
 
-            self.provider.install(
-                self.active_alt_source or self.app_list_element,
-                lambda result: self.update_installation_status()
-            )
+            if self.local_file:
+                self.provider.install_file(
+                    self.active_alt_source or self.app_list_element,
+                    lambda result: self.update_installation_status()
+                )
+            else:
+                self.provider.install(
+                    self.active_alt_source or self.app_list_element,
+                    lambda result: self.update_installation_status()
+                )
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
             self.provider.uninstall(

@@ -38,7 +38,11 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.view_title_widget = Adw.ViewSwitcherTitle(stack=self.app_lists_stack)
         self.left_button = Gtk.Button(icon_name='go-previous', visible=False)
 
+        menu_obj = Gtk.Builder.new_from_resource('/it/mijorus/boutique/gtk/main-menu.xml')
+        self.menu_button = Gtk.MenuButton(icon_name='open-menu', menu_model=menu_obj.get_object('primary_menu'))
+
         self.titlebar.pack_start(self.left_button)
+        self.titlebar.pack_end(self.menu_button)
         
         self.titlebar.set_title_widget(self.view_title_widget)
         self.set_titlebar(self.titlebar)

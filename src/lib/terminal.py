@@ -7,7 +7,7 @@ from .utils import log
 
 def _command_is_allowed(command: str) -> bool:
     allowed = ['flatpak']
-    return command.split(' ')[0] in allowed
+    return (command.split(' ')[0] in allowed) or ('--appimage-extract' in command)
 
 _sanitizer = None
 def sanitize(_input: str) -> str:
@@ -19,7 +19,7 @@ def sanitize(_input: str) -> str:
     return re.sub(_sanitizer, " ", _input)
 
 def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False) -> str:
-    to_check = command if isinstance(command, str) else command[0]
+    to_check = command if isinstance(command, str) else ' '.join(command)
     if not _command_is_allowed(to_check):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 

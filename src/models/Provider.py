@@ -68,7 +68,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def install_file(self, filename: Gio.File, callback: Callable[[bool], None]) -> bool:
+    def install_file(self, list_element: AppListElement, callback: Callable[[bool], None]) -> bool:
         pass
 
     @abstractmethod

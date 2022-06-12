@@ -3,8 +3,11 @@ import string
 import threading
 import urllib
 import re
+import os
+import time
 import requests
 import html2text
+import subprocess
 
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
@@ -23,11 +26,11 @@ class AppImageProvider(Provider):
     def list_installed(self) -> List[AppListElement]:
         return []
 
-    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> Tuple[bool, AppListElement]:
-        pass
+    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, AppListElement]:
+        return (False, el)
 
     def get_icon(self, AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
-        pass
+        return Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
 
     def uninstall(self, el: AppListElement, c: Callable[[bool], None]):
         pass
@@ -36,16 +39,16 @@ class AppImageProvider(Provider):
         pass
 
     def search(self, query: str) -> List[AppListElement]:
-        pass
+        return []
 
     def get_long_description(self, el: AppListElement) ->  str:
-        pass
+        return ''
 
     def load_extra_data_in_appdetails(self, widget: Gtk.Widget, el: AppListElement):
         pass
 
     def list_updatables(self) -> List[AppUpdateElement]:
-        pass
+        return []
 
     def update(self, el: AppListElement, callback: Callable[[bool], None]):
         pass
@@ -54,23 +57,76 @@ class AppImageProvider(Provider):
         pass
 
     def updates_need_refresh(self) -> bool:
-        pass
+        return True
 
     def run(self, el: AppListElement):
         pass
 
     def can_install_file(self, file: Gio.File) -> bool:
         path: str = file.get_path()
-        return path.endswith('appimage')
+        return path.endswith('.AppImage')
 
     def is_updatable(self, app_id: str) -> bool:
         pass
 
-    def install_file(self, filename: Gio.File, callback: Callable[[bool], None]) -> bool:
-        pass
+    def install_file(self, list_element: AppListElement, callback: Callable[[bool], None]) -> bool:
+        def install_job():
+            temp_file = 'temp_appimage_' + str(time.time_ns().__floor__())
+            file = Gio.File.new_for_path(list_element.extra_data['file_path'])
+            folder = Gio.File.new_for_path(GLib.get_user_cache_dir() + f'/appimages/{temp_file}')
+
+            if folder.make_directory_with_parents(None):
+                dest_file = Gio.File.new_for_path( folder.get_path() + f'/{temp_file}')
+                file_copy = file.copy(
+                    dest_file, 
+                    Gio.FileCopyFlags.OVERWRITE, 
+                    None, None, None, None
+                )
+
+                dest_file_info = dest_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS)
+
+                if file_copy:
+                    terminal.sh(["bash", "-c", f"cd {folder.get_path()} && {dest_file.get_path()} --appimage-extract "])
+
+                    squash_folder = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root')
+                    if squash_folder.query_exists():
+                        desktop_file: Optional[Gio.File] = None
+                        desktop_files: list[str] = filter(lambda x: x.endswith('.desktop'), os.listdir(f'{folder.get_path()}/squashfs-root'))
+
+                        for d in desktop_files:
+                            gdesk_file = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root/{d}')
+                            if gdesk_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS).get_content_type() == 'application/x-desktop':
+                                desktop_file = gdesk_file
+                                break
+
+                        if desktop_file:
+                            # Move .appimage to its default location
+                            appimages_destination_path = GLib.get_home_dir() + '/AppImages'
+                            if dest_file.move(
+                                Gio.File.new_for_path(appimages_destination_path + '/' + dest_file_info.get_name()), 
+                                Gio.FileCopyFlags.OVERWRITE, 
+                                None, None, None, None
+                            ):
+                                log(f'file moved to {appimages_destination_path}')
+
+                                # Move .desktop file to its default location
+                                desktop_files_destination_path = GLib.get_home_dir() + '/.local/share/applications'
+                                if desktop_file.move(
+                                    Gio.File.new_for_path(f'{desktop_files_destination_path}/{dest_file_info.get_name()}.desktop'), 
+                                    Gio.FileCopyFlags.OVERWRITE, 
+                                    None, None, None, None
+                                ):
+                                    log('desktop file moved to ' + desktop_files_destination_path)
+            else:
+                callback(False)
+
+        threading.Thread(target=install_job, daemon=True).start()
+        return True
 
     def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
-        pass
+        return AppListElement('test', 'test', 'test', 'appimage', InstalledStatus.NOT_INSTALLED,
+            file_path=file.get_path()
+        )
 
     def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
         pass

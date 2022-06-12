@@ -155,8 +155,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             if only_provider is not None and p != only_provider:
                 continue
 
-            updatable_elements = provider.list_updatables() 
-            self.updates_row_list.remove(spinner)
+            updatable_elements = provider.list_updatables()
 
             for row in self.installed_apps_list_rows:
                 row_is_upgrdble = False
@@ -177,6 +176,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
 
         self.updates_fetched = True
+        self.updates_row_list.remove(spinner)
         self.installed_apps_list.set_opacity(1)
         self.updates_revealter.set_reveal_child(upgradable > 0)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
