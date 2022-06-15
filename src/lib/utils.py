@@ -2,7 +2,7 @@ import re
 import os
 import requests
 
-from gi.repository import Gtk, Adw, GdkPixbuf, GLib, Gdk
+from gi.repository import Gtk, Adw, GdkPixbuf, GLib, Gdk, Gio
 
 def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     """
@@ -63,3 +63,6 @@ def get_application_window() -> Gtk.ApplicationWindow:
 
 def qq(condition, is_true, is_false):
     return is_true if condition else is_false
+
+def get_giofile_content_type(file: Gio.File):
+    return file.query_info('standard::', Gio.FileQueryInfoFlags.NONE, None).get_content_type()

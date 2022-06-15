@@ -10,7 +10,7 @@ import html2text
 import subprocess
 
 from ..lib import flatpak, terminal
-from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
@@ -63,8 +63,7 @@ class AppImageProvider(Provider):
         pass
 
     def can_install_file(self, file: Gio.File) -> bool:
-        path: str = file.get_path()
-        return path.endswith('.AppImage')
+        return get_giofile_content_type(file) == 'application/vnd.appimage'
 
     def is_updatable(self, app_id: str) -> bool:
         pass

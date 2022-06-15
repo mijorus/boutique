@@ -94,14 +94,22 @@ class BoutiqueApplication(Adw.Application):
     def on_open_file_chooser(self, widget, _):
         if not self.win:
             return
+
+        def on_open_file_chooser_reponse(widget, id):
+            selected_file = widget.get_file()
+
+            if isinstance(self.props.active_window, BoutiqueWindow):
+                self.props.active_window.on_selected_local_file(selected_file)
+
         
-        dialog = Gtk.FileChooserDialog(
+        self.file_chooser_dialog = Gtk.FileChooserNative(
             title='Open a file',
             action=Gtk.FileChooserAction.OPEN,
             transient_for=self.win
         )
 
-        dialog.show()
+        self.file_chooser_dialog.connect('response', on_open_file_chooser_reponse)
+        self.file_chooser_dialog.show()
 
 def main(version):
     """The application's entry point."""
