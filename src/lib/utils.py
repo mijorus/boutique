@@ -71,3 +71,6 @@ def get_giofile_content_type(file: Gio.File):
 def send_notification(notification=Gio.Notification, tag=None):
     if not tag: tag = str(time.time_ns())
     Gio.Application().get_default().send_notification(tag, notification)
+
+def get_gsettings() -> Gio.Settings:
+    return Gio.Settings.new('it.mijorus.boutique')

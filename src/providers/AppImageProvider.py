@@ -1,6 +1,7 @@
 import random
 import string
 import threading
+import logging
 import urllib
 import re
 import os
@@ -10,7 +11,7 @@ import html2text
 import subprocess
 
 from ..lib import flatpak, terminal
-from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type, get_gsettings
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
@@ -24,6 +25,22 @@ class AppImageProvider(Provider):
         pass
 
     def list_installed(self) -> List[AppListElement]:
+        default_folder_path = get_gsettings().get_string('appimages-default-folder')
+        
+        try:
+            folder = Gio.File.new_for_path(default_folder_path)
+            user_data_dir = GLib.get_user_data_dir() 
+
+            if len(user_data_dir):
+                user_data_dir += '/applications'
+            else;
+                user_data_dir = '~/.local/share/applications'
+
+            desktop_files_folder = Gio.File.new_for_path(user_data_dir)
+            # desktop_files_folder.
+        except Error as e:
+            logging.error(e)
+
         return []
 
     def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, AppListElement]:
