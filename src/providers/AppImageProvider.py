@@ -29,16 +29,19 @@ class AppImageProvider(Provider):
         
         try:
             folder = Gio.File.new_for_path(default_folder_path)
-            user_data_dir = GLib.get_user_data_dir() 
+            desktop_files_dir = f'{GLib.get_home_dir()}/.local/share/applications/'
+            for file_name in os.listdir(desktop_files_dir):
+                gfile = Gio.File.new_for_path(desktop_files_dir + f'/{file_name}')
 
-            if len(user_data_dir):
-                user_data_dir += '/applications'
-            else;
-                user_data_dir = '~/.local/share/applications'
+                try:
+                    if get_giofile_content_type(gfile) == 'application/x-desktop':
+                        f, _ = gfile.load_bytes(None)
+                        print(f.get_data().decode('utf-8'))
 
-            desktop_files_folder = Gio.File.new_for_path(user_data_dir)
-            # desktop_files_folder.
-        except Error as e:
+                except Exception as e:
+                    logging.warn(e)
+
+        except Exception as e:
             logging.error(e)
 
         return []
@@ -111,7 +114,7 @@ class AppImageProvider(Provider):
 
                         for d in desktop_files:
                             gdesk_file = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root/{d}')
-                            if gdesk_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS).get_content_type() == 'application/x-desktop':
+                            if get_giofile_content_type(gdesk_file) == 'application/x-desktop':
                                 desktop_file = gdesk_file
                                 break
 
