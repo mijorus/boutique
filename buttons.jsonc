@@ -2,7 +2,12 @@
     "buttons": [
         {
             "name": "Run",
-            "script": "flatpak-builder build/ it.mijorus.boutique.json --user --force-clean --jobs=16 && flatpak-builder --env=DEBUG_MODE=dev --run build/ it.mijorus.boutique.json gdb --args python3 /app/bin/boutique",
+            "script": "flatpak-builder build/ it.mijorus.boutique.json --user --force-clean --jobs=16 && flatpak-builder --env=DEBUG_MODE=dev --run build/ it.mijorus.boutique.json boutique",
+            "description": ""
+        },
+        {
+            "name": "Run debug",
+            "script": "flatpak-builder build/ it.mijorus.boutique.json --user --force-clean --jobs=16 && flatpak-builder --env=DEBUG_MODE=dev --run build/ it.mijorus.boutique.json gdb --ex run --args python3 /app/bin/boutique",
             "description": ""
         }
     ]

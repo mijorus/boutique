@@ -110,7 +110,9 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
             self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
             self.container_stack.set_visible_child(self.app_details)
         else:
-            Gio.Notification.new('Unsupported file type: Boutique can\'t handle these types of files.')
+            utils.send_notification(
+                Gio.Notification.new('Unsupported file type: Boutique can\'t handle these types of files.')
+            )
 
     def on_show_installed_list(self, source: Gtk.Widget=None, _=None):
         self.container_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)

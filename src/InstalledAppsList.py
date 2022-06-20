@@ -39,7 +39,11 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         # updates row
         self.updates_fetched = False
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
-        self.updates_row_list: Optional[Gtk.ListBox] = None
+        self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
+        self.updates_row_list_spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5), visible=False)
+        self.updates_row_list.append(self.updates_row_list_spinner)
+        self.updates_row_list.connect('row-activated', self.on_activated_row)
+        self.updates_row_list_items: list = []
         self.updates_revealter = Gtk.Revealer(child=self.updates_row, transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN, reveal_child=False)
 
         updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER, margin_bottom=5)
@@ -52,6 +56,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         updates_title_row.append(self.update_all_btn)
         self.updates_row.append(updates_title_row)
+        self.updates_row.append(self.updates_row_list)
 
         # title row
         title_row = Gtk.Box(margin_bottom=5)
@@ -126,34 +131,23 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
     def _refresh_upgradable_thread(self, only_provider: Optional[str]=None):
         """Runs the background task to check for app updates"""
-        refresh = False
-        for p, provider in providers.items():
-            if provider.updates_need_refresh():
-                refresh = True
-                break
+        for widget in self.updates_row_list_items:
+            self.updates_row_list.remove(widget)
 
-        if not refresh:
-            return
-
-        if self.updates_row_list:
-            self.updates_row.remove(self.updates_row_list)
+        self.updates_row_list_items = []
 
         if self.installed_apps_list:
             self.installed_apps_list.set_opacity(0.5)
 
         self.updates_revealter.set_reveal_child(not self.updates_fetched)
         self.updates_title_label.set_label('Searching for updates...')
-        self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 
         upgradable = 0
-
-        self.updates_row.append(self.updates_row_list)
-        spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
-        self.updates_row_list.append(spinner)
+        self.updates_row_list_spinner.set_visible(True)
 
         for p, provider in providers.items():
-            if only_provider is not None and p != only_provider:
-                continue
+            # if only_provider is not None and p != only_provider:
+            #     continue
 
             updatable_elements = provider.list_updatables()
 
@@ -171,21 +165,27 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
                         app_list_item.load_icon()
                         self.updates_row_list.append( app_list_item )
+                        self.updates_row_list_items.append( app_list_item )
                         break
 
                 row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
 
         self.updates_fetched = True
-        self.updates_row_list.remove(spinner)
+        self.updates_row_list_spinner.set_visible(False)
         self.installed_apps_list.set_opacity(1)
         self.updates_revealter.set_reveal_child(upgradable > 0)
-        self.updates_row_list.connect('row-activated', self.on_activated_row)
         self.updates_title_label.set_label('Available updates')
         self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only_provider: Optional[str]=None):
-        thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ))
-        thread.start()
+        refresh = False
+        for p, provider in providers.items():
+            refresh = provider.updates_need_refresh()
+            if refresh: break
+
+        if refresh:
+            thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ), daemon=True)
+            thread.start()
 
     def after_update_all(self, result: bool, prov: str):
         if result:

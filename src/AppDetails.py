@@ -1,5 +1,6 @@
 import threading
 import time
+import logging
 from typing import Optional
 from .lib.utils import qq
 from gi.repository import Gtk, GObject, Adw, Gdk, Gio
@@ -131,12 +132,12 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
-            print(p)
             if provider.can_install_file(file):
                 list_element = provider.create_list_element_from_file(file)
                 self.set_app_list_element(list_element, True, True)
                 return True
 
+        logging.debug('Trying to open an unsupported file')
         return False
 
     def on_primary_action_button_clicked(self, button: Gtk.Button):

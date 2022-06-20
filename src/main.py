@@ -17,6 +17,7 @@
 
 import sys
 import gi
+import logging
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -98,10 +99,9 @@ class BoutiqueApplication(Adw.Application):
         def on_open_file_chooser_reponse(widget, id):
             selected_file = widget.get_file()
 
-            if isinstance(self.props.active_window, BoutiqueWindow):
+            if selected_file and isinstance(self.props.active_window, BoutiqueWindow):
                 self.props.active_window.on_selected_local_file(selected_file)
 
-        
         self.file_chooser_dialog = Gtk.FileChooserNative(
             title='Open a file',
             action=Gtk.FileChooserAction.OPEN,
@@ -114,4 +114,5 @@ class BoutiqueApplication(Adw.Application):
 def main(version):
     """The application's entry point."""
     app = BoutiqueApplication()
+    logging.basicConfig(level=logging.DEBUG)
     return app.run(sys.argv)

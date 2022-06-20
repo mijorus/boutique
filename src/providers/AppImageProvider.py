@@ -57,7 +57,7 @@ class AppImageProvider(Provider):
         pass
 
     def updates_need_refresh(self) -> bool:
-        return True
+        return False
 
     def run(self, el: AppListElement):
         pass

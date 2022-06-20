@@ -1,5 +1,7 @@
 import re
 import os
+import time
+import logging
 import requests
 
 from gi.repository import Gtk, Adw, GdkPixbuf, GLib, Gdk, Gio
@@ -21,8 +23,7 @@ def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
     return subdict
 
 def log(s):
-    if os.getenv('DEBUG_MODE', None) == 'dev':
-        print(s)
+    logging.debug(s)
 
 def add_page_to_adw_stack(stack: Adw.ViewStack, page: Gtk.Widget, name: str, title: str, icon: str):
     stack.add_titled( page, name, title )
@@ -66,3 +67,7 @@ def qq(condition, is_true, is_false):
 
 def get_giofile_content_type(file: Gio.File):
     return file.query_info('standard::', Gio.FileQueryInfoFlags.NONE, None).get_content_type()
+
+def send_notification(notification=Gio.Notification, tag=None):
+    if not tag: tag = str(time.time_ns())
+    Gio.Application().get_default().send_notification(tag, notification)
