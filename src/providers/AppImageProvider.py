@@ -9,6 +9,7 @@ import time
 import requests
 import html2text
 import subprocess
+from xdg import DesktopEntry
 
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type, get_gsettings
@@ -25,18 +26,30 @@ class AppImageProvider(Provider):
         pass
 
     def list_installed(self) -> List[AppListElement]:
-        default_folder_path = get_gsettings().get_string('appimages-default-folder')
+        default_folder_path = get_gsettings().get_string('appimages-default-folder').replace('~', GLib.get_home_dir())
+        output = []
         
         try:
             folder = Gio.File.new_for_path(default_folder_path)
             desktop_files_dir = f'{GLib.get_home_dir()}/.local/share/applications/'
+
             for file_name in os.listdir(desktop_files_dir):
                 gfile = Gio.File.new_for_path(desktop_files_dir + f'/{file_name}')
 
                 try:
                     if get_giofile_content_type(gfile) == 'application/x-desktop':
-                        f, _ = gfile.load_bytes(None)
-                        print(f.get_data().decode('utf-8'))
+
+                        entry = DesktopEntry.DesktopEntry(filename=gfile.get_path())
+                        if entry.getExec().startswith(default_folder_path):
+                            output.append(AppListElement(
+                                name=entry.getName(),
+                                description=entry.getComment(),
+                                icon=entry.getIcon(),
+                                app_id=entry.getExec(),
+                                installed_status=InstalledStatus.INSTALLED,
+                                file_path=gfile.get_path(),
+                                provider='appimage'
+                            ))
 
                 except Exception as e:
                     logging.warn(e)
@@ -44,7 +57,8 @@ class AppImageProvider(Provider):
         except Exception as e:
             logging.error(e)
 
-        return []
+        logging.debug(output)
+        return output
 
     def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, AppListElement]:
         return (False, el)
