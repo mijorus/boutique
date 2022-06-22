@@ -40,7 +40,7 @@ class AppImageProvider(Provider):
                     if get_giofile_content_type(gfile) == 'application/x-desktop':
 
                         entry = DesktopEntry.DesktopEntry(filename=gfile.get_path())
-                        if entry.getExec().startswith(default_folder_path):
+                        if entry.getExec().startswith(default_folder_path) and GLib.file_test(entry.getExec(), GLib.FileTest.EXISTS):
                             output.append(AppListElement(
                                 name=entry.getName(),
                                 description=entry.getComment(),
@@ -57,7 +57,6 @@ class AppImageProvider(Provider):
         except Exception as e:
             logging.error(e)
 
-        logging.debug(output)
         return output
 
     def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, AppListElement]:
