@@ -475,22 +475,27 @@ class FlatpakProvider(Provider):
             list_element.installed_status = InstalledStatus.INSTALLED
 
             self.do_updates_need_refresh = True
-            if self.refresh_installed_status_callback: self.refresh_installed_status_callback(final=True)
+            if self.refresh_installed_status_callback: 
+                self.refresh_installed_status_callback(final=True)
+
+        def on_downgrade_dialog_response(dialog: Gtk.Dialog, response: int):
+            if response == Gtk.ResponseType.YES:
+                threading.Thread(target=install_old_version, daemon=True).start()
+
+            dialog.destroy()
 
         action = qq(data['list_element'].installed_status.INSTALLED, 'downgrade', 'install')
-        # dialog = Gtk.MessageDialog(
-        #     get_application_window(),
-        #     Gtk.DialogFlags.MODAL,
-        #     Gtk.MessageType.QUESTION,
-        #     Gtk.ButtonsType.YES_NO,
-        #     f'Do you really want to {action} "{data["list_element"].name}" ?',
-        #     # secondary_text=f'An older version might contain bugs and could have issues with newer configuration files. If you decide to proceed, {data["to_version"]} will be installed.'
-        # )
+        self.downgrade_dialog = Gtk.MessageDialog(
+            # flags=Gtk.DialogFlags.MODAL,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text=f'Do you really want to {action} "{data["list_element"].name}" ?',
+            transient_for=get_application_window(),
+            secondary_text=f'An older version might contain bugs and could have issues with newer configuration files.'
+        )
 
-
-        # dialog.add_button("Yes", 1)
-        # dialog.add_button("No", 0)
-        threading.Thread(target=install_old_version, daemon=True).start()
+        self.downgrade_dialog.connect('response', on_downgrade_dialog_response)
+        self.downgrade_dialog.show()
 
     def get_selected_source(self, list_elements: list[AppListElement], source_id: str) -> AppListElement:
         for alt_source in list_elements:
