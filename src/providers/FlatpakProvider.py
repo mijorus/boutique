@@ -468,15 +468,15 @@ class FlatpakProvider(Provider):
 
         def install_old_version():
             terminal.sh(['flatpak', 'kill', list_element.id], hide_err=True, return_stderr=True)
-            list_element.installed_status = InstalledStatus.UPDATING
-            if self.refresh_installed_status_callback: self.refresh_installed_status_callback()
+            self.refresh_installed_status_callback(status=InstalledStatus.UPDATING)
             
-            terminal.sh(['flatpak', 'update', f'--commit={data["commit"]}', '-y', '--noninteractive', list_element.id], return_stderr=False)
-            list_element.installed_status = InstalledStatus.INSTALLED
-
-            self.do_updates_need_refresh = True
-            if self.refresh_installed_status_callback: 
-                self.refresh_installed_status_callback(final=True)
+            try:
+                terminal.sh(['flatpak', 'update', f'--commit={data["commit"]}', '-y', '--noninteractive', list_element.id])
+                self.do_updates_need_refresh = True
+                self.refresh_installed_status_callback(status=InstalledStatus.INSTALLED)
+            except Exception as e:
+                print(e)
+                self.refresh_installed_status_callback(final=True, status=InstalledStatus.ERROR)
 
         def on_downgrade_dialog_response(dialog: Gtk.Dialog, response: int):
             if response == Gtk.ResponseType.YES:

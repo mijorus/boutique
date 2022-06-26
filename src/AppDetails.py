@@ -263,7 +263,11 @@ class AppDetails(Gtk.ScrolledWindow):
             alt_sources=sources
         )
 
-    def provider_refresh_installed_status(self, final=False):
+    def provider_refresh_installed_status(self, status: Optional[InstalledStatus]=None, final=False):
+        if status:
+            self.app_list_element.installed_status = status
+
         self.update_installation_status()
+
         if final: 
             self.emit('refresh-updatable')

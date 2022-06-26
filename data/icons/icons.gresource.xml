@@ -2,5 +2,6 @@
 <gresources>
     <gresource prefix="/it/mijorus/boutique/icons/scalable/actions">
         <file compressed="true" preprocess="xml-stripblanks" alias="funnel-outline-symbolic">hicolor/symbolic/funnel-outline-symbolic.svg</file>
+        <file compressed="true" preprocess="xml-stripblanks" alias="application-x-executable-symbolic">hicolor/symbolic/application-x-executable-symbolic.svg</file>
     </gresource>
 </gresources>

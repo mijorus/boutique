@@ -62,8 +62,13 @@ class AppImageProvider(Provider):
     def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, AppListElement]:
         return (False, el)
 
-    def get_icon(self, AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
-        return Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
+    def get_icon(self, el: AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
+        icon_path = get_gsettings().get_string('appimages-default-folder').replace('~', GLib.get_home_dir()) + '/' + el.id + '.png'
+
+        if os.path.exists(icon_path):
+            Gtk.Image.new_from_file(icon_path)
+        else:
+            return Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
 
     def uninstall(self, el: AppListElement, c: Callable[[bool], None]):
         pass

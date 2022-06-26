@@ -5,6 +5,7 @@
         <file>gtk/help-overlay.ui</file>
         <file>gtk/main-menu.xml</file>
         <file>assets/flathub-badge-logo.svg</file>
+        <file>assets/App-image-logo-bw.svg</file>
         <file>assets/style.css</file>
     </gresource>
 </gresources>
