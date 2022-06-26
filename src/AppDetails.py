@@ -3,7 +3,7 @@ import time
 import logging
 from typing import Optional
 from .lib.utils import qq
-from gi.repository import Gtk, GObject, Adw, Gdk, Gio
+from gi.repository import Gtk, GObject, Adw, Gdk, Gio, Pango
 from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
 from .providers import FlatpakProvider
@@ -31,7 +31,13 @@ class AppDetails(Gtk.ScrolledWindow):
         title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2)
         self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START)
         self.version = Gtk.Label(label='', halign=Gtk.Align.START, css_classes=['dim-label'])
-        self.app_id = Gtk.Label(label='', halign=Gtk.Align.START, selectable=True, css_classes=['dim-label'])
+        self.app_id = Gtk.Label(label='', 
+            halign=Gtk.Align.START, 
+            selectable=True, 
+            css_classes=['dim-label'], 
+            ellipsize=Pango.EllipsizeMode.END,
+            max_width_chars=100, 
+        )
 
         for el in [self.title, self.app_id, self.version]:
             title_col.append(el)
@@ -259,4 +265,5 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def provider_refresh_installed_status(self, final=False):
         self.update_installation_status()
-        if final: self.emit('refresh-updatable')
+        if final: 
+            self.emit('refresh-updatable')

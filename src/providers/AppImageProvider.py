@@ -42,7 +42,7 @@ class AppImageProvider(Provider):
                         entry = DesktopEntry.DesktopEntry(filename=gfile.get_path())
                         if entry.getExec().startswith(default_folder_path) and GLib.file_test(entry.getExec(), GLib.FileTest.EXISTS):
                             output.append(AppListElement(
-                                name=entry.getName(),
+                                name=entry.getName() + ' (AppImage)',
                                 description=entry.getComment(),
                                 icon=entry.getIcon(),
                                 app_id=entry.getExec(),

@@ -11,7 +11,7 @@ from .models.Provider import Provider
 from .components.FilterEntry import FilterEntry
 from .components.CustomComponents import NoAppsFoundRow
 from .components.AppListBoxItem import AppListBoxItem
-from .lib.utils import set_window_cursor, key_in_dict
+from .lib.utils import set_window_cursor, key_in_dict, log
 
 class InstalledAppsList(Gtk.ScrolledWindow):
     __gsignals__ = {
@@ -99,6 +99,10 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.installed_apps_list.append(self.no_apps_found_row)
         self.no_apps_found_row.set_visible(False)
         self.installed_apps_list_slot.append(self.installed_apps_list)
+        
+        self.installed_apps_list.set_sort_func(self.sort_installed_apps_list)
+        self.installed_apps_list.invalidate_sort()
+
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
         set_window_cursor('default')
 
@@ -206,3 +210,12 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         for p, provider in providers.items():
             provider.update_all(self.after_update_all)
+
+    def sort_installed_apps_list(widget: Gtk.ListBox, row: AppListBoxItem, row1: AppListBoxItem):
+        if (not hasattr(row1, '_app')):
+            return 1
+
+        if (not hasattr(row, '_app')) or (row._app.name.lower() < row1._app.name.lower()):
+            return -1
+
+        return 1
