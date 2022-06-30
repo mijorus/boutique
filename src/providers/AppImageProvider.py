@@ -5,7 +5,9 @@ import logging
 import urllib
 import re
 import os
+import shutil
 import time
+import hashlib
 import requests
 import html2text
 import subprocess
@@ -108,8 +110,11 @@ class AppImageProvider(Provider):
 
     def install_file(self, list_element: AppListElement, callback: Callable[[bool], None]) -> bool:
         def install_job():
-            temp_file = 'temp_appimage_' + str(time.time_ns().__floor__())
+            list_element.installed_status = InstalledStatus.INSTALLING
             file = Gio.File.new_for_path(list_element.extra_data['file_path'])
+            
+            ## hash file
+            temp_file = 'boutique_appimage_' + hashlib.md5(open(file.get_path(), 'rb').read()).hexdigest()
             folder = Gio.File.new_for_path(GLib.get_user_cache_dir() + f'/appimages/{temp_file}')
 
             if folder.make_directory_with_parents(None):
@@ -123,37 +128,58 @@ class AppImageProvider(Provider):
                 dest_file_info = dest_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS)
 
                 if file_copy:
-                    terminal.sh(["bash", "-c", f"cd {folder.get_path()} && {dest_file.get_path()} --appimage-extract "])
-
                     squash_folder = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root')
-                    if squash_folder.query_exists():
-                        desktop_file: Optional[Gio.File] = None
-                        desktop_files: list[str] = filter(lambda x: x.endswith('.desktop'), os.listdir(f'{folder.get_path()}/squashfs-root'))
+                    
+                    try:
+                        terminal.sh(["bash", "-c", f"cd {folder.get_path()} && {dest_file.get_path()} --appimage-extract "])
 
-                        for d in desktop_files:
-                            gdesk_file = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root/{d}')
-                            if get_giofile_content_type(gdesk_file) == 'application/x-desktop':
-                                desktop_file = gdesk_file
-                                break
+                        if squash_folder.query_exists():
+                            desktop_file: Optional[Gio.File] = None
+                            desktop_files: list[str] = filter(lambda x: x.endswith('.desktop'), os.listdir(f'{folder.get_path()}/squashfs-root'))
 
-                        if desktop_file:
-                            # Move .appimage to its default location
-                            appimages_destination_path = GLib.get_home_dir() + '/AppImages'
-                            if dest_file.move(
-                                Gio.File.new_for_path(appimages_destination_path + '/' + dest_file_info.get_name()), 
-                                Gio.FileCopyFlags.OVERWRITE, 
-                                None, None, None, None
-                            ):
-                                log(f'file moved to {appimages_destination_path}')
+                            for d in desktop_files:
+                                gdesk_file = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root/{d}')
+                                if get_giofile_content_type(gdesk_file) == 'application/x-desktop':
+                                    desktop_file = gdesk_file
+                                    break
 
-                                # Move .desktop file to its default location
-                                desktop_files_destination_path = GLib.get_home_dir() + '/.local/share/applications'
-                                if desktop_file.move(
-                                    Gio.File.new_for_path(f'{desktop_files_destination_path}/{dest_file_info.get_name()}.desktop'), 
+                            if desktop_file:
+                                # Move .appimage to its default location
+                                appimages_destination_path = GLib.get_home_dir() + '/AppImages'
+                                if dest_file.move(
+                                    Gio.File.new_for_path(appimages_destination_path + '/' + dest_file_info.get_name()), 
                                     Gio.FileCopyFlags.OVERWRITE, 
                                     None, None, None, None
                                 ):
-                                    log('desktop file moved to ' + desktop_files_destination_path)
+                                    log(f'file moved to {appimages_destination_path}')
+
+                                    # Move .desktop file to its default location
+                                    desktop_files_destination_path = GLib.get_home_dir() + '/.local/share/applications'
+                                    if desktop_file.move(
+                                        Gio.File.new_for_path(f'{desktop_files_destination_path}/{dest_file_info.get_name()}.desktop'), 
+                                        Gio.FileCopyFlags.OVERWRITE, 
+                                        None, None, None, None
+                                    ):
+                                    
+                                        log('desktop file moved to ' + desktop_files_destination_path)
+                                        list_element.installed_status = InstalledStatus.INSTALLED
+
+                        if list_element.installed_status != InstalledStatus.INSTALLED:
+                            list_element.installed_status = InstalledStatus.ERROR
+
+                            # if appimages_destination_path exitsts, delete it
+                            if os.path.exists(appimages_destination_path):
+                                Gio.File.new_for_path(appimages_destination_path).delete(None)
+                                log('deleted ' + appimages_destination_path)
+
+                    except Exception as e:
+                        logging.error(e)
+                        list_element.installed_status = InstalledStatus.ERROR
+
+                    finally:
+                        self.post_file_installation_creanup(squash_folder)
+                        callback(list_element.installed_status == InstalledStatus.INSTALLED)
+
             else:
                 callback(False)
 
@@ -173,3 +199,7 @@ class AppImageProvider(Provider):
     
     def set_refresh_installed_status_callback(self, callback: Optional[Callable]):
         pass
+
+    def post_file_installation_creanup(self, squash_folder: Gio.File):
+        if squash_folder.query_exists() and squash_folder.get_path().startswith(GLib.get_user_cache_dir()):
+            shutil.rmtree(squash_folder.get_path())

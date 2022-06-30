@@ -34,7 +34,7 @@ def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False) -> s
         if return_stderr:
             return e.output
         else:
-            raise Exception(e.stderr) from e
+            raise
 
     return re.sub(r'\n$', '', output.stdout)
 
