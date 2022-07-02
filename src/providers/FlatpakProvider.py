@@ -1,3 +1,4 @@
+import logging
 import random
 import string
 import threading
@@ -6,6 +7,7 @@ import re
 import requests
 import html2text
 import subprocess
+from typing import TypedDict
 
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
@@ -15,6 +17,9 @@ from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject
+
+class FlatpakState(TypedDict):
+    installed_status: InstalledStatus
 
 class FlatpakProvider(Provider):
     def __init__(self):
@@ -31,6 +36,8 @@ class FlatpakProvider(Provider):
             'org.kde.KStyle',
             'org.videolan.VLC.Plugin'
         ]
+
+        self.flatpaks_state: dict[str, FlatpakState] = {}
 
     def is_installed(self, list_element: AppListElement, alt_sources: list[AppListElement]=[]):
         ref = self.get_ref(list_element)
@@ -377,7 +384,9 @@ class FlatpakProvider(Provider):
 
     def update(self, list_element: AppListElement, callback: Callable):
         self.list_updatables_cache = None
-        def update_task(list_element: AppListElement, callback: Callable):
+
+        def update_task():
+            self.flatpaks_state[list_element.id] = {'installed_status': list_element.installed_status}
             ref = self.get_ref(list_element)
             success = False
 
@@ -388,14 +397,14 @@ class FlatpakProvider(Provider):
                 self.do_updates_need_refresh = True
                 success = True
             except Exception as e:
-                print(e)
+                logging.error(e)
                 list_element.set_installed_status(InstalledStatus.ERROR)
 
             if callback:
                 callback(success)
 
         list_element.set_installed_status(InstalledStatus.UPDATING)
-        threading.Thread(target=update_task, daemon=True, args=(list_element, callback, )).start()
+        threading.Thread(target=update_task, daemon=True).start()
 
     def run(self, el: AppListElement):
         terminal.threaded_sh(['flatpak', 'run', '--user', el.id])

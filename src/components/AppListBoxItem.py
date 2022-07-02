@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from ..lib.utils import cleanhtml
 import re
 
-from ..models.AppListElement import AppListElement
+from ..models.AppListElement import AppListElement, InstalledStatus
 from ..providers.providers_list import providers
 
 class AppListBoxItem(Gtk.ListBoxRow):
