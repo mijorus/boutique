@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Callable, Dict, Tuple, Optional
 from .AppListElement import AppListElement
 from .Models import AppUpdateElement
+from .AppListElement import InstalledStatus
 from gi.repository import Gtk, Gio
 
 class Provider(ABC):
@@ -84,5 +85,5 @@ class Provider(ABC):
         pass
     
     @abstractmethod
-    def set_refresh_installed_status_callback(self, callback: Optional[Callable]):
+    def set_refresh_installed_status_callback(self, callback: Optional[Callable[[InstalledStatus, bool], None]]):
         pass

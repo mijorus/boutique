@@ -182,14 +182,13 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only_provider: Optional[str]=None):
-        refresh = False
         for p, provider in providers.items():
-            refresh = provider.updates_need_refresh()
-            if refresh: break
+            if provider.updates_need_refresh():
+                thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ), daemon=True)
+                thread.start()
 
-        if refresh:
-            thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ), daemon=True)
-            thread.start()
+                break
+            
 
     def after_update_all(self, result: bool, prov: str):
         if result:

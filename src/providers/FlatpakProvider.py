@@ -65,13 +65,15 @@ class FlatpakProvider(Provider):
     def list_installed(self) -> List[AppListElement]:
         output: list[AppListElement] = []
 
+        for app in flatpak.apps_list():
+
             output.append(
                 AppListElement(
                     app['name'], 
                     app['description'], 
                     app['application'], 
                     'flatpak', 
-                    status,
+                    InstalledStatus.INSTALLED,
 
                     ref=app['ref'], 
                     origin=app['origin'],
