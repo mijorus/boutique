@@ -38,6 +38,7 @@ class FlatpakProvider(Provider):
         ]
 
         self.flatpaks_state: dict[str, FlatpakState] = {}
+        self.list_installed_list: List[AppListElement] = []
 
     def is_installed(self, list_element: AppListElement, alt_sources: list[AppListElement]=[]):
         ref = self.get_ref(list_element)
@@ -62,16 +63,15 @@ class FlatpakProvider(Provider):
             return i, None
 
     def list_installed(self) -> List[AppListElement]:
-        output = []
+        output: list[AppListElement] = []
 
-        for app in flatpak.apps_list():
             output.append(
                 AppListElement(
                     app['name'], 
                     app['description'], 
                     app['application'], 
                     'flatpak', 
-                    InstalledStatus.INSTALLED,
+                    status,
 
                     ref=app['ref'], 
                     origin=app['origin'],
@@ -386,9 +386,10 @@ class FlatpakProvider(Provider):
         self.list_updatables_cache = None
 
         def update_task():
-            self.flatpaks_state[list_element.id] = {'installed_status': list_element.installed_status}
             ref = self.get_ref(list_element)
             success = False
+
+            self.flatpaks_state[list_element.id] = {'installed_status': list_element.installed_status}
 
             try:
                 terminal.sh(['flatpak', 'update', '--user', '--noninteractive', ref])
@@ -399,6 +400,11 @@ class FlatpakProvider(Provider):
             except Exception as e:
                 logging.error(e)
                 list_element.set_installed_status(InstalledStatus.ERROR)
+
+            self.flatpaks_state[list_element.id] = {'installed_status': list_element.installed_status}
+
+            if self.refresh_installed_status_callback:
+                self.refresh_installed_status_callback(final=True)
 
             if callback:
                 callback(success)
@@ -422,6 +428,7 @@ class FlatpakProvider(Provider):
 
             if callback:
                 callback(success, 'flatpak')
+
         threading.Thread(target=update_task, daemon=True, args=(callback, )).start()
 
     def can_install_file(self, file: Gio.File):

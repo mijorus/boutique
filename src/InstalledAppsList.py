@@ -51,7 +51,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.updates_title_label = Gtk.Label(label='', css_classes=['title-4'], hexpand=True, halign=Gtk.Align.START)
         updates_title_row.append( self.updates_title_label )
         
-        self.update_all_btn =  Gtk.Button(label='Update all', css_classes=['suggested-action'], valign=Gtk.Align.CENTER) 
+        self.update_all_btn = Gtk.Button(label='Update all', css_classes=['suggested-action'], valign=Gtk.Align.CENTER) 
         self.update_all_btn.connect('clicked', self.on_update_all_btn_clicked)
 
         updates_title_row.append(self.update_all_btn)
