@@ -50,7 +50,8 @@ class AppImageProvider(Provider):
                                 app_id=entry.getExec(),
                                 installed_status=InstalledStatus.INSTALLED,
                                 file_path=gfile.get_path(),
-                                provider='appimage'
+                                provider='appimage',
+                                desktop_entry=entry
                             ))
 
                 except Exception as e:
@@ -68,8 +69,13 @@ class AppImageProvider(Provider):
         icon_path = get_gsettings().get_string('appimages-default-folder').replace('~', GLib.get_home_dir()) + '/' + el.id + '.png'
 
         if os.path.exists(icon_path):
-            Gtk.Image.new_from_file(icon_path)
+            return Gtk.Image.new_from_file(icon_path)
         else:
+            # icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+            # log( icon_theme.has_icon(el.extra_data['desktop_entry'].getIcon()) )
+            # icon = Gio.ThemedIcon.new(el.extra_data['desktop_entry'].getIcon())
+
+            # return Gtk.Image.new_from_gicon(icon)
             return Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
 
     def uninstall(self, el: AppListElement, c: Callable[[bool], None]):
