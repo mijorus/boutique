@@ -5,16 +5,18 @@
     "sdk" : "org.gnome.Sdk",
     "command" : "boutique",
     "finish-args" : [
+        "--share=ipc",
         "--share=network",
         "--socket=wayland",
         "--socket=fallback-x11",
         "--device=dri",
-        "--system-talk-name=org.freedesktop.Flatpak",
-        "--talk-name=org.freedesktop.Flatpak",
-        "--filesystem=~/.local/share/flatpak",
-        "--filesystem=~/.local/share/applications/",
-        "--filesystem=xdg-data/icons/hicolor",
         "--talk-name=org.freedesktop.FileManager1",
+        "--talk-name=org.freedesktop.Flatpak",
+        "--system-talk-name=org.freedesktop.Flatpak",
+        "--filesystem=~/.local/share:ro",
+        "--filesystem=~/.local/share/flatpak:ro",
+        "--filesystem=xdg-data/icons/hicolor:ro",
+        "--filesystem=xdg-data/icons:ro",
         "--filesystem=home"
     ],
     "cleanup" : [

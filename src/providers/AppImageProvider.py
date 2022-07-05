@@ -71,15 +71,21 @@ class AppImageProvider(Provider):
         if os.path.exists(icon_path):
             return Gtk.Image.new_from_file(icon_path)
         else:
-            # icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
-            # log( icon_theme.has_icon(el.extra_data['desktop_entry'].getIcon()) )
-            # icon = Gio.ThemedIcon.new(el.extra_data['desktop_entry'].getIcon())
+            icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+            
+            if icon_theme.has_icon(el.extra_data['desktop_entry'].getIcon()):
+                return Gtk.Image.new_from_icon_name(el.extra_data['desktop_entry'].getIcon())
 
-            # return Gtk.Image.new_from_gicon(icon)
             return Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
 
     def uninstall(self, el: AppListElement, c: Callable[[bool], None]):
-        pass
+        def uninstall_ob():
+            try:
+                os.remove(el.file_path)
+                c(True)
+            except Exception as e:
+                c(False)
+                logging.error(e)
 
     def install(self, el: AppListElement, c: Callable[[bool], None]):
         pass
@@ -90,8 +96,14 @@ class AppImageProvider(Provider):
     def get_long_description(self, el: AppListElement) ->  str:
         return ''
 
-    def load_extra_data_in_appdetails(self, widget: Gtk.Widget, el: AppListElement):
-        pass
+    def load_extra_data_in_appdetails(self, widget: Gtk.Widget, list_element: AppListElement):
+        source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
+
+        if 'file_path' in list_element.extra_data:
+            source_row.append( LabelStart(label='File:', css_classes=['heading']) )
+            source_row.append( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
+
+        widget.append(source_row)
 
     def list_updatables(self) -> List[AppUpdateElement]:
         return []
