@@ -8,6 +8,7 @@ import requests
 import html2text
 import subprocess
 from typing import TypedDict
+from xdg import DesktopEntry
 
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
@@ -92,11 +93,11 @@ class FlatpakProvider(Provider):
                 repo = list_element.extra_data['origin']
                 aarch = list_element.extra_data['arch']
                 local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
-                icon_in_local_path = GLib.file_test(local_file_path, GLib.FileTest.EXISTS)
+
             except Exception as e:
                 log(e)
 
-        if icon_in_local_path:
+        if GLib.file_test(local_file_path, GLib.FileTest.EXISTS):
             image = Gtk.Image.new_from_file(local_file_path)
             image.set_pixel_size(45)
         else:
