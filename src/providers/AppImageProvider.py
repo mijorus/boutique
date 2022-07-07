@@ -147,6 +147,8 @@ class AppImageProvider(Provider):
         def install_job():
             list_element.installed_status = InstalledStatus.INSTALLING
 
+            extraction_folder = None
+
             try:
                 desktop_entry, extraction_folder, dest_file, desktop_file = self.extract_appimage(file_path=list_element.extra_data['file_path'])
                 dest_file_info = dest_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS)
@@ -164,12 +166,13 @@ class AppImageProvider(Provider):
                         # Move .desktop file to its default location
                         desktop_files_destination_path = GLib.get_home_dir() + '/.local/share/applications'
                         if desktop_file.move(
-                            Gio.File.new_for_path(f'{desktop_files_destination_path}/{dest_file_info.get_name()}.desktop'), 
+                            Gio.File.new_for_path(f'{desktop_files_destination_path}/{list_element.name}_{dest_file_info.get_name()}.desktop'), 
                             Gio.FileCopyFlags.OVERWRITE, 
                             None, None, None, None
                         ):
                         
                             log('desktop file moved to ' + desktop_files_destination_path)
+                            list_element.extra_data['desktop_entry'] = DesktopEntry.new_from_file(desktop_file.get_path())
                             list_element.installed_status = InstalledStatus.INSTALLED
 
             except Exception as e:
@@ -177,7 +180,9 @@ class AppImageProvider(Provider):
                 list_element.installed_status = InstalledStatus.ERROR
 
             finally:
-                self.post_file_extraction_cleanup(extraction_folder)
+                if extraction_folder:
+                    self.post_file_extraction_cleanup(extraction_folder)
+
                 callback(list_element.installed_status == InstalledStatus.INSTALLED)
 
 
@@ -221,7 +226,8 @@ class AppImageProvider(Provider):
         temp_file = 'boutique_appimage_' + hashlib.md5(open(file.get_path(), 'rb').read()).hexdigest()
         folder = Gio.File.new_for_path(GLib.get_user_cache_dir() + f'/appimages/{temp_file}')
 
-        self.post_file_extraction_cleanup(folder)
+        if folder.query_exists():
+            shutil.rmtree(folder.get_path())
 
         if folder.make_directory_with_parents(None):
             dest_file = Gio.File.new_for_path( folder.get_path() + f'/{temp_file}')
@@ -236,6 +242,9 @@ class AppImageProvider(Provider):
             if file_copy:
                 squash_folder = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root')
                 
+                # set exec permission for dest_file
+                # dest_file.set_attribute_string('unix::mode', '0755', Gio.FileQueryInfoFlags.NONE)
+                os.chmod(dest_file.get_path(), 0o755)
                 terminal.sh(["bash", "-c", f"cd {folder.get_path()} && {dest_file.get_path()} --appimage-extract "])
 
                 if squash_folder.query_exists():
