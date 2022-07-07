@@ -20,7 +20,7 @@ from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List
-from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Pango
 
 class AppImageProvider(Provider):
     def __init__(self):
@@ -49,7 +49,7 @@ class AppImageProvider(Provider):
                                 icon=entry.getIcon(),
                                 app_id=entry.getExec(),
                                 installed_status=InstalledStatus.INSTALLED,
-                                file_path=gfile.get_path(),
+                                file_path=entry.getExec(),
                                 provider='appimage',
                                 desktop_entry=entry
                             ))
@@ -62,8 +62,17 @@ class AppImageProvider(Provider):
 
         return output
 
-    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, AppListElement]:
-        return (False, el)
+    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> tuple[bool, Optional[AppListElement]]:
+        if 'file_path' in el.extra_data:
+            for file_name in os.listdir(self.get_appimages_default_destination_path()):
+                installed_gfile = Gio.File.new_for_path(self.get_appimages_default_destination_path() + '/' + file_name)
+                loaded_gfile = Gio.File.new_for_path(el.extra_data['file_path'])
+
+                if get_giofile_content_type(installed_gfile) == 'application/vnd.appimage':
+                    if installed_gfile.hash() == loaded_gfile.hash():
+                        return True, None
+
+        return False, None
 
     def get_icon(self, el: AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
         icon_path = get_gsettings().get_string('appimages-default-folder').replace('~', GLib.get_home_dir()) + '/' + el.id + '.png'
@@ -73,19 +82,19 @@ class AppImageProvider(Provider):
         else:
             icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
             
-            if icon_theme.has_icon(el.extra_data['desktop_entry'].getIcon()):
+            if ('desktop_entry' in el.extra_data) and icon_theme.has_icon(el.extra_data['desktop_entry'].getIcon()):
                 return Gtk.Image.new_from_icon_name(el.extra_data['desktop_entry'].getIcon())
 
             return Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
 
-    def uninstall(self, el: AppListElement, c: Callable[[bool], None]):
-        def uninstall_ob():
-            try:
-                os.remove(el.file_path)
-                c(True)
-            except Exception as e:
-                c(False)
-                logging.error(e)
+    def uninstall(self, el: AppListElement, callback: Callable[[bool], None]):
+        try:
+            os.remove(el.extra_data['file_path'])
+            os.remove(el.extra_data['desktop_entry'].getFileName())
+            callback(True)
+        except Exception as e:
+            callback(False)
+            logging.error(e)
 
     def install(self, el: AppListElement, c: Callable[[bool], None]):
         pass
@@ -101,7 +110,15 @@ class AppImageProvider(Provider):
 
         if 'file_path' in list_element.extra_data:
             source_row.append( LabelStart(label='File:', css_classes=['heading']) )
-            source_row.append( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
+            source_row.append( 
+                LabelStart(
+                    label=list_element.extra_data['file_path'], 
+                    margin_bottom=20,
+                    max_width_chars=60, 
+                    ellipsize=Pango.EllipsizeMode.MIDDLE,
+                    selectable=True,
+                ) 
+            )
 
         widget.append(source_row)
 
@@ -168,12 +185,13 @@ class AppImageProvider(Provider):
         return True
 
     def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
-        desktop_entry, extraction_folder, dest_file, desktop_file = self.extract_appimage(file_path=file.get_path())
-        self.post_file_extraction_cleanup(extraction_folder)
+        app_name: str = file.get_parse_name().split('/')[-1]
+        app_name = re.sub(r'\.appimage$', '', app_name, flags=re.IGNORECASE)
+        app_name = re.sub(r'\.x86_64$', '', app_name, flags=re.IGNORECASE)
 
         return AppListElement(
-            name=desktop_entry.getName(), 
-            description=desktop_entry.getComment(), 
+            name=app_name, 
+            description='', 
             app_id=hashlib.md5(open(file.get_path(), 'rb').read()).hexdigest(), 
             provider='appimage', 
             installed_status=InstalledStatus.NOT_INSTALLED,

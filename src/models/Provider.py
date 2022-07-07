@@ -13,7 +13,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> Tuple[bool, AppListElement]:
+    def is_installed(self, el: AppListElement, alt_sources: list[AppListElement]=[]) -> Tuple[bool, Optional[AppListElement]]:
         pass
 
     @abstractmethod
