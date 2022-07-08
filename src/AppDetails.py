@@ -153,7 +153,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
             self.provider.uninstall(
                 self.app_list_element, 
-                lambda result: self.update_installation_status()
+                self.update_status_callback
             )
 
         elif self.app_list_element.installed_status == InstalledStatus.UNINSTALLING:
@@ -166,18 +166,18 @@ class AppDetails(Gtk.ScrolledWindow):
             if self.local_file:
                 self.provider.install_file(
                     self.active_alt_source or self.app_list_element,
-                    lambda result: self.update_installation_status()
+                    self.update_status_callback
                 )
             else:
                 self.provider.install(
                     self.active_alt_source or self.app_list_element,
-                    lambda result: self.update_installation_status()
+                    self.update_status_callback
                 )
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
             self.provider.uninstall(
                 self.app_list_element, 
-                lambda result: self.update_installation_status()
+                self.update_status_callback
             )
 
     def on_secondary_action_button_clicked(self, button: Gtk.Button):
@@ -190,6 +190,12 @@ class AppDetails(Gtk.ScrolledWindow):
                 self.app_list_element, 
                 lambda result: self.update_installation_status()
             )
+
+    def update_status_callback(self, status: bool):
+        if not status:
+            self.app_list_element.set_installed_status(InstalledStatus.ERROR)
+
+        self.update_installation_status()
 
     def update_installation_status(self, check_installed=False):
         self.primary_action_button.set_css_classes([])
@@ -237,6 +243,10 @@ class AppDetails(Gtk.ScrolledWindow):
 
         elif self.app_list_element.installed_status == InstalledStatus.UPDATING:
             self.primary_action_button.set_label('Updating')
+
+        elif self.app_list_element.installed_status == InstalledStatus.ERROR:
+            self.primary_action_button.set_label('Error')
+            self.primary_action_button.set_css_classes(['destructive-action'])
 
     def load_description(self):
         spinner = Gtk.Spinner(spinning=True)
