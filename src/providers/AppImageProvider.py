@@ -86,7 +86,7 @@ class AppImageProvider(Provider):
     def get_icon(self, el: AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
         icon_path = None
 
-        if el.extra_data['desktop_entry']:
+        if 'desktop_entry' in el.extra_data:
             icon_path = el.extra_data['desktop_entry'].getIcon()
 
         if icon_path and os.path.exists(icon_path):

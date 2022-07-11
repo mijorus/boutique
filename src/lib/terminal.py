@@ -21,7 +21,7 @@ def sanitize(_input: str) -> str:
 
 def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False, safe=False) -> str:
     to_check = command if isinstance(command, str) else ' '.join(command)
-    if safe or not _command_is_allowed(to_check):
+    if (_command_is_allowed(to_check) is False) and (safe is not True):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     try:
@@ -43,12 +43,12 @@ def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False, safe
 
 def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, safe=False):
     to_check = command if isinstance(command, str) else command[0]
-    if safe or not _command_is_allowed(to_check):
+    if (_command_is_allowed(to_check) is False) and (safe is not True):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     def run_command(command: str, callback: Callable[[str], None]=None):
         try:
-            output = sh(command)
+            output = sh(command, safe=safe)
 
             if callback:
                 callback(re.sub(r'\n$', '', output))
