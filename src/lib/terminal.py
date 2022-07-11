@@ -7,8 +7,7 @@ from .utils import log
 
 def _command_is_allowed(command: str) -> bool:
     allowed = ['flatpak']
-    # return (command.split(' ')[0] in allowed) or ('--appimage-extract' in command)
-    return True
+    return (command.split(' ')[0] in allowed) or ('--appimage-extract' in command)
 
 _sanitizer = None
 def sanitize(_input: str) -> str:
@@ -41,14 +40,14 @@ def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False, safe
 
     return re.sub(r'\n$', '', output.stdout)
 
-def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, safe=False):
+def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, safe=False, hide_err=False, return_stderr=False):
     to_check = command if isinstance(command, str) else command[0]
     if (_command_is_allowed(to_check) is False) and (safe is not True):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     def run_command(command: str, callback: Callable[[str], None]=None):
         try:
-            output = sh(command, safe=safe)
+            output = sh(command, safe=safe, hide_err=hide_err, return_stderr=return_stderr)
 
             if callback:
                 callback(re.sub(r'\n$', '', output))

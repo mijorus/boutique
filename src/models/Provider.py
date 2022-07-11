@@ -87,3 +87,7 @@ class Provider(ABC):
     @abstractmethod
     def set_refresh_installed_status_callback(self, callback: Optional[Callable[[InstalledStatus, bool], None]]):
         pass
+
+    @abstractmethod
+    def get_previews(self, el: AppListElement) -> List[Gtk.Image]:
+        pass

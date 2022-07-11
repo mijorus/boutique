@@ -570,3 +570,16 @@ class FlatpakProvider(Provider):
 
     def updates_need_refresh(self) -> bool:
         return self.do_updates_need_refresh
+
+    def get_previews(self, el: AppListElement) -> list[Gtk.Image]:
+        if el.extra_data['origin'] == 'flathub':
+            appstream = flatpak.get_appstream(el.id, 'flathub')
+
+            output = []
+            for screenshot_sizes in appstream['screenshots']:
+                selected_size = list(screenshot_sizes.keys())[0]
+                output.append( gtk_image_from_url(screenshot_sizes[selected_size], Gtk.Image()) )
+
+            return output
+
+        return []

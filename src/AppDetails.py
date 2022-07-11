@@ -55,18 +55,28 @@ class AppDetails(Gtk.ScrolledWindow):
         for el in [self.icon_slot, title_col, self.secondary_action_button, self.primary_action_button]:
             self.details_row.append(el)
 
-        # 2nd row
+        #row
+        self.previews_row = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, 
+            spacing=10, 
+            margin_top=20,
+        )
+
+        # row
         self.desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
         self.description = Gtk.Label(label='', halign=Gtk.Align.START, wrap=True, selectable=True)
         
         self.desc_row.append(self.description)
 
-        # 3rd row
+        # row
         self.third_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
 
-        for el in [self.details_row, self.desc_row, self.third_row]:
+        self.desc_row_spinner = Gtk.Spinner(spinning=False, visible=False)
+        self.desc_row.append(self.desc_row_spinner)
+
+        for el in [self.details_row, self.previews_row, self.desc_row, self.third_row]:
             self.main_box.append(el)
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
@@ -131,6 +141,8 @@ class AppDetails(Gtk.ScrolledWindow):
         
         self.description.set_label('')
         threading.Thread(target=self.load_description).start()
+
+        threading.Thread(target=self.load_previews).start()
 
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -249,11 +261,12 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_css_classes(['destructive-action'])
 
     def load_description(self):
-        spinner = Gtk.Spinner(spinning=True)
-        self.desc_row.append(spinner)
+        self.desc_row_spinner.set_visible(True)
+        self.desc_row_spinner.set_spinning(True)
 
         desc = self.provider.get_long_description(self.app_list_element) 
-        self.desc_row.remove(spinner)
+        self.desc_row_spinner.set_spinning(False)
+        self.desc_row_spinner.set_visible(False)
 
         self.description.set_markup(desc)
 
@@ -281,3 +294,21 @@ class AppDetails(Gtk.ScrolledWindow):
 
         if final: 
             self.emit('refresh-updatable')
+
+    def load_previews(self):
+        self.desc_row_spinner.set_visible(True)
+        self.desc_row_spinner.set_spinning(True)
+
+        if self.previews_row.get_first_child():
+            self.previews_row.remove( self.previews_row.get_first_child() )
+
+        carousel = Adw.Carousel(hexpand=True, spacing=10)
+        for image in self.provider.get_previews(self.app_list_element):
+            image.set_pixel_size(400)
+            carousel.append(image)
+            logging.debug(image)
+
+        self.previews_row.append(carousel)
+
+        self.desc_row_spinner.set_visible(False)
+        self.desc_row_spinner.set_spinning(False)

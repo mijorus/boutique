@@ -40,7 +40,7 @@ def cleanhtml(raw_html: str) -> str:
     cleantext = re.sub(_html_clearner, '', raw_html)
     return cleantext
 
-def gtk_image_from_url(url: str, image: Gtk.Image):
+def gtk_image_from_url(url: str, image: Gtk.Image) -> Gtk.Image:
     response = requests.get(url, timeout=10)
     response.raise_for_status()
 
@@ -50,6 +50,7 @@ def gtk_image_from_url(url: str, image: Gtk.Image):
 
     image.clear()
     image.set_from_pixbuf(loader.get_pixbuf())
+    return image
 
 def set_window_cursor(cursor: str):
     for w in Gtk.Window.list_toplevels():

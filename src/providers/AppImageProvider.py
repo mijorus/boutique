@@ -352,3 +352,6 @@ class AppImageProvider(Provider):
 
     def get_appimages_default_destination_path(self) -> str:
         return get_gsettings().get_string('appimages-default-folder').replace('~', GLib.get_home_dir())
+
+    def get_previews(self, el):
+        return []
