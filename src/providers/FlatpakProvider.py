@@ -87,6 +87,7 @@ class FlatpakProvider(Provider):
 
     def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False) -> Gtk.Image:
         icon_in_local_path = False
+        local_file_path = None
 
         if 'origin' in list_element.extra_data and 'arch' in list_element.extra_data:
             try:
@@ -97,7 +98,7 @@ class FlatpakProvider(Provider):
             except Exception as e:
                 log(e)
 
-        if GLib.file_test(local_file_path, GLib.FileTest.EXISTS):
+        if local_file_path and GLib.file_test(local_file_path, GLib.FileTest.EXISTS):
             image = Gtk.Image.new_from_file(local_file_path)
             image.set_pixel_size(45)
         else:
