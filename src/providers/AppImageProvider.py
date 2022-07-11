@@ -11,6 +11,7 @@ import hashlib
 import requests
 import html2text
 import subprocess
+import filecmp
 from xdg import DesktopEntry
 
 from ..lib import flatpak, terminal
@@ -23,7 +24,7 @@ from typing import List, Callable, Union, Dict, Optional, List, TypedDict
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Pango
 
 class ExtractedAppImage():
-    desktop_entry: DesktopEntry.DesktopEntry
+    desktop_entry: Optional[DesktopEntry.DesktopEntry]
     extraction_folder: Gio.File
     container_folder: Gio.File
     appimage_file: Gio.File
@@ -76,15 +77,19 @@ class AppImageProvider(Provider):
                 loaded_gfile = Gio.File.new_for_path(el.extra_data['file_path'])
 
                 if get_giofile_content_type(installed_gfile) == 'application/vnd.appimage':
-                    if installed_gfile.hash() == loaded_gfile.hash():
+                    if filecmp.cmp(installed_gfile.get_path(), loaded_gfile.get_path(), shallow=False):
+                        el.extra_data['file_path'] = installed_gfile.get_path()
                         return True, None
 
         return False, None
 
     def get_icon(self, el: AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
-        icon_path = get_gsettings().get_string('appimages-default-folder').replace('~', GLib.get_home_dir()) + '/' + el.id + '.png'
+        icon_path = None
 
-        if os.path.exists(icon_path):
+        if el.extra_data['desktop_entry']:
+            icon_path = el.extra_data['desktop_entry'].getIcon()
+
+        if icon_path and os.path.exists(icon_path):
             return Gtk.Image.new_from_file(icon_path)
         else:
             icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
@@ -144,7 +149,8 @@ class AppImageProvider(Provider):
         return False
 
     def run(self, el: AppListElement):
-        pass
+        if self.get_appimages_default_destination_path() in el.extra_data['file_path']:
+            terminal.threaded_sh([f'{el.extra_data["file_path"]}'], safe=True)
 
     def can_install_file(self, file: Gio.File) -> bool:
         return get_giofile_content_type(file) == 'application/vnd.appimage'
@@ -167,7 +173,12 @@ class AppImageProvider(Provider):
 
                     # Move .appimage to its default location
                     appimages_destination_path = self.get_appimages_default_destination_path()
-                    safe_app_name = f'{terminal.sanitize(extracted_appimage.desktop_entry.getName())}_{dest_file_info.get_name()}'
+
+                    # how the appimage will be called
+                    safe_app_name = f'boutique_{dest_file_info.get_name()}'
+                    if extracted_appimage.desktop_entry:
+                        safe_app_name = f'{terminal.sanitize(extracted_appimage.desktop_entry.getName())}_{dest_file_info.get_name()}'
+
                     dest_appimage_file = Gio.File.new_for_path(appimages_destination_path + '/' + safe_app_name + '.appimage')
 
                     if extracted_appimage.appimage_file.copy(
@@ -181,10 +192,14 @@ class AppImageProvider(Provider):
                         list_element.extra_data['file_path'] = dest_appimage_file.get_path()
 
                         # copy the icon file
-                        icon_file = f'{extracted_appimage.extraction_folder.get_path()}/{extracted_appimage.desktop_entry.getIcon()}.png'
-                        dest_icon_file_path = f'{appimages_destination_path}/icons/{dest_file_info.get_name()}.png'
+                        icon_file = None
+                        dest_icon_file_path = 'applications-other' # a default icon
 
-                        if os.path.exists(icon_file):
+                        if extracted_appimage.desktop_entry:
+                            icon_file = f'{extracted_appimage.extraction_folder.get_path()}/{extracted_appimage.desktop_entry.getIcon()}.png'
+                            dest_icon_file_path = f'{appimages_destination_path}/icons/{dest_file_info.get_name()}.png'
+
+                        if icon_file and os.path.exists(icon_file):
                             if not os.path.exists(f'{appimages_destination_path}/icons'):
                                 os.mkdir(f'{appimages_destination_path}/icons')
 
@@ -192,7 +207,7 @@ class AppImageProvider(Provider):
 
                         # Move .desktop file to its default location
                         desktop_files_destination_path = GLib.get_home_dir() + '/.local/share/applications'
-                        dest_destop_file_path = f'{desktop_files_destination_path}/{terminal.sanitize(extracted_appimage.desktop_entry.getName())}_{dest_file_info.get_name()}.desktop'
+                        dest_destop_file_path = f'{desktop_files_destination_path}/{safe_app_name}.desktop'
                         dest_destop_file_path = dest_destop_file_path.replace(' ', '_')
 
                         with open(extracted_appimage.desktop_file.get_path(), 'r') as desktop_file_python:
@@ -212,9 +227,14 @@ class AppImageProvider(Provider):
                                 flags=re.MULTILINE
                             )
                             
+
+                            final_app_name = extracted_appimage.appimage_file.get_basename()
+                            if extracted_appimage.desktop_entry:
+                                final_app_name = f"{extracted_appimage.desktop_entry.getName()} ({extracted_appimage.desktop_entry.get('X-AppImage-Version')})"
+
                             desktop_file_content = re.sub(
                                 r'Name=.*$',
-                                f"Name={extracted_appimage.desktop_entry.getName()} ({extracted_appimage.desktop_entry.get('X-AppImage-Version')})",
+                                f"Name={final_app_name}",
                                 desktop_file_content,
                                 flags=re.MULTILINE
                             )
@@ -274,11 +294,15 @@ class AppImageProvider(Provider):
     def extract_appimage(self, file_path: str) -> ExtractedAppImage:
         file = Gio.File.new_for_path(file_path)
 
-        desktop_entry = None
+        desktop_entry: Optional[DesktopEntry.DesktopEntry] = None
         extraction_folder = None
 
         ## hash file
-        temp_file = 'boutique_appimage_' + hashlib.md5(open(file.get_path(), 'rb').read()).hexdigest()
+        temp_file = None
+
+        with open(file.get_path(), 'rb') as f:
+            temp_file = 'boutique_appimage_' + hashlib.md5(f.read()).hexdigest()
+
         folder = Gio.File.new_for_path(GLib.get_user_cache_dir() + f'/appimages/{temp_file}')
 
         if folder.query_exists():
