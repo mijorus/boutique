@@ -66,15 +66,15 @@ class AppDetails(Gtk.ScrolledWindow):
         self.desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
         self.description = Gtk.Label(label='', halign=Gtk.Align.START, wrap=True, selectable=True)
         
+        self.desc_row_spinner = Gtk.Spinner(spinning=False, visible=False)
+        self.desc_row.append(self.desc_row_spinner)
+
         self.desc_row.append(self.description)
 
         # row
         self.third_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
-
-        self.desc_row_spinner = Gtk.Spinner(spinning=False, visible=False)
-        self.desc_row.append(self.desc_row_spinner)
 
         for el in [self.details_row, self.previews_row, self.desc_row, self.third_row]:
             self.main_box.append(el)
@@ -261,12 +261,10 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_css_classes(['destructive-action'])
 
     def load_description(self):
-        self.desc_row_spinner.set_visible(True)
-        self.desc_row_spinner.set_spinning(True)
+        self.show_row_spinner(True)
 
         desc = self.provider.get_long_description(self.app_list_element) 
-        self.desc_row_spinner.set_spinning(False)
-        self.desc_row_spinner.set_visible(False)
+        self.show_row_spinner(False)
 
         self.description.set_markup(desc)
 
@@ -296,8 +294,7 @@ class AppDetails(Gtk.ScrolledWindow):
             self.emit('refresh-updatable')
 
     def load_previews(self):
-        self.desc_row_spinner.set_visible(True)
-        self.desc_row_spinner.set_spinning(True)
+        self.show_row_spinner(True)
 
         if self.previews_row.get_first_child():
             self.previews_row.remove( self.previews_row.get_first_child() )
@@ -309,6 +306,8 @@ class AppDetails(Gtk.ScrolledWindow):
             logging.debug(image)
 
         self.previews_row.append(carousel)
+        self.show_row_spinner(False)
 
-        self.desc_row_spinner.set_visible(False)
-        self.desc_row_spinner.set_spinning(False)
+    def show_row_spinner(self, status: bool):
+        self.desc_row_spinner.set_visible(status)
+        self.desc_row_spinner.set_spinning(status)
