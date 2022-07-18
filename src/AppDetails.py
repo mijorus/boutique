@@ -57,7 +57,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
         #row
         self.previews_row = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, 
+            orientation=Gtk.Orientation.VERTICAL, 
             spacing=10, 
             margin_top=20,
         )
@@ -300,13 +300,26 @@ class AppDetails(Gtk.ScrolledWindow):
         if self.previews_row.get_first_child():
             self.previews_row.remove( self.previews_row.get_first_child() )
 
-        carousel = Adw.Carousel(hexpand=True, spacing=10)
-        for image in self.provider.get_previews(self.app_list_element):
-            image.set_pixel_size(400)
-            carousel.append(image)
-            logging.debug(image)
+        carousel_row = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=10, 
+            margin_top=20,
+        )
 
-        self.previews_row.append(carousel)
+        carousel = Adw.Carousel(hexpand=True, spacing=10, allow_scroll_wheel=True)
+        carousel_indicator = Adw.CarouselIndicatorDots(carousel=carousel)
+        for image in self.provider.get_previews(self.app_list_element):
+            carousel.append(image)
+
+        carousel_row.append(carousel)
+        carousel_row.append(carousel_indicator)
+
+        carousel_row_revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN)
+        carousel_row_revealer.set_child(carousel_row)
+
+        self.previews_row.append(carousel_row_revealer)
+        carousel_row_revealer.set_reveal_child(True)
+
         self.show_row_spinner(False)
 
     def show_row_spinner(self, status: bool):
