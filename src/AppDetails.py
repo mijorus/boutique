@@ -265,6 +265,7 @@ class AppDetails(Gtk.ScrolledWindow):
 
         desc = self.provider.get_long_description(self.app_list_element) 
         self.show_row_spinner(False)
+        
 
         self.description.set_markup(desc)
 

@@ -188,16 +188,19 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 thread.start()
 
                 break
-            
 
     def after_update_all(self, result: bool, prov: str):
-        if result:
-            self.refresh_upgradable(only_provider=prov)
-
+        if result and (not self.update_all_btn.has_css_class('destructive-action')):
             if self.updates_row_list and prov == [*providers.keys()][-1]:
                 self.updates_row_list.set_opacity(1)
                 self.update_all_btn.set_label('Update all')
-                self.update_all_btn.set_sensitive(True)
+
+        else:
+            self.update_all_btn.set_label('Error')
+            self.update_all_btn.set_css_classes(['destructive-action'])
+
+        self.update_all_btn.set_sensitive(True)
+        self.refresh_upgradable(only_provider=prov)
 
     def on_update_all_btn_clicked(self, widget: Gtk.Button):
         if not self.updates_row_list:
