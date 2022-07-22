@@ -573,9 +573,9 @@ class FlatpakProvider(Provider):
         return self.do_updates_need_refresh
 
     def get_previews(self, el: AppListElement) -> list[Gtk.Image]:
-        def load_preview_image(url, image: Gtk.Image):
+        def load_preview_image(url, image: Gtk.Image, button: Gtk.Button):
             gtk_image_from_url(screenshot_sizes[selected_size], image)
-            image.set_visible(True)
+            button.set_visible(True)
 
         if el.extra_data['origin'] == 'flathub':
             appstream = flatpak.get_appstream(el.id, 'flathub')
@@ -583,12 +583,12 @@ class FlatpakProvider(Provider):
             output = []
             for screenshot_sizes in appstream['screenshots']:
                 selected_size = list(screenshot_sizes.keys())[0]
-                image = Gtk.Image(visible=False, pixel_size=400)
-                image_button = Gtk.Button(child=image)
+                image = Gtk.Image(pixel_size=400)
+                image_button = Gtk.Button(child=image, visible=False)
                 image_button.connect('clicked', lambda w: Gtk.show_uri(None, screenshot_sizes[selected_size], time.time()))
                 output.append(image_button)
 
-                threading.Thread(target=load_preview_image, daemon=True, args=(screenshot_sizes[selected_size], image)).start()
+                threading.Thread(target=load_preview_image, daemon=True, args=(screenshot_sizes[selected_size], image, image_button)).start()
 
             return output
 
