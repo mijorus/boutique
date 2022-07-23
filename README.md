@@ -11,8 +11,15 @@ Made with GTK4
 ## Testing
 
 (please keep in mind this is alpha software)
+ 
+ 1. Clone the repo
+ 2. move into the cloned repo
+ 3. run these commands:
 
 ```sh
+# builds the project 
 flatpak-builder build/ it.mijorus.boutique.json --user --force-clean
+
+# runs the project
 flatpak-builder --run build/ it.mijorus.boutique.json boutique
 ```
