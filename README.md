@@ -7,3 +7,12 @@
 A work-in-progress Flatpak and Appimages app manager.
 
 Made with GTK4
+
+## Testing
+
+(please keep in mind this is alpha software)
+
+```sh
+flatpak-builder build/ it.mijorus.boutique.json --user --force-clean
+flatpak-builder --run build/ it.mijorus.boutique.json boutique
+```
