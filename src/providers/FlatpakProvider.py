@@ -572,7 +572,7 @@ class FlatpakProvider(Provider):
     def updates_need_refresh(self) -> bool:
         return self.do_updates_need_refresh
 
-    def get_previews(self, el: AppListElement) -> list[Gtk.Image]:
+    def get_previews(self, el: AppListElement) -> list[Gtk.Widget]:
         def load_preview_image(url, image: Gtk.Image, button: Gtk.Button):
             gtk_image_from_url(screenshot_sizes[selected_size], image)
             button.set_visible(True)
@@ -581,15 +581,22 @@ class FlatpakProvider(Provider):
             appstream = flatpak.get_appstream(el.id, 'flathub')
 
             output = []
-            for screenshot_sizes in appstream['screenshots']:
-                selected_size = list(screenshot_sizes.keys())[0]
-                image = Gtk.Image(pixel_size=400)
-                image_button = Gtk.Button(child=image, visible=False)
-                image_button.connect('clicked', lambda w: Gtk.show_uri(None, screenshot_sizes[selected_size], time.time()))
-                output.append(image_button)
+            if appstream and ('screenshots' in appstream):
+                for screenshot_sizes in appstream['screenshots']:
+                    selected_size = list(screenshot_sizes.keys())[0]
+                    preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-                threading.Thread(target=load_preview_image, daemon=True, args=(screenshot_sizes[selected_size], image, image_button)).start()
+                    image = Gtk.Image(pixel_size=400)
+                    image_button = Gtk.Button(label='Open in the browser', visible=False, halign=Gtk.Align.CENTER)
+                    image_button.connect('clicked', lambda w: Gtk.show_uri(None, screenshot_sizes[selected_size], time.time()))
 
-            return output
+                    preview.append(image)
+                    preview.append(image_button)
+
+                    output.append(preview)
+
+                    threading.Thread(target=load_preview_image, daemon=True, args=(screenshot_sizes[selected_size], image, image_button)).start()
+
+                return output
 
         return []
