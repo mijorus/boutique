@@ -1,9 +1,7 @@
+<img align="left" alt="Project logo" src="data/icons/hicolor/scalable/apps/it.mijorus.boutique.svg" />
+
 # Boutique
-
-
-<p align="center">
-  <img width="150" src="data/icons/hicolor/scalable/apps/it.mijorus.boutique.svg">
-</p>
+A Fast and Convenient Flatpak frontend
 
 <p align="center">
   <img width="500" src="https://user-images.githubusercontent.com/39067225/180618676-15405cd2-dde9-4b13-970c-dd30958d5c12.png">
@@ -14,22 +12,15 @@
 </p>
 
 
-A work-in-progress Flatpak and Appimages app manager.
-
-Made with GTK4
+A Work-in-Progress Flatpak and Appimages app manager made with GTK4.
 
 ## Testing
 
 (please keep in mind this is alpha software)
- 
- 1. Clone the repo
- 2. move into the cloned repo
- 3. run these commands:
 
-```sh
-# builds the project 
-flatpak-builder build/ it.mijorus.boutique.json --user --force-clean
-
-# runs the project
-flatpak-builder --run build/ it.mijorus.boutique.json boutique
-```
+1. Open GNOME Builder
+2. Press the "Clone Repository" button in the bottom of window
+3. Paste this in "Repository URL" `https://github.com/mijorus/boutique.git`
+4. Press the "Build" button (hammer in the header bar)
+5. Press on the status panel and click "Export Bundle" to export the app as a Flatpak bundle
+6. Install the bundle with `flatpak install <path to bundle>`
