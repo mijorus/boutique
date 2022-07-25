@@ -306,10 +306,10 @@ class AppDetails(Gtk.ScrolledWindow):
             margin_top=20,
         )
 
-        carousel = Adw.Carousel(hexpand=True, spacing=10, allow_scroll_wheel=True)
+        carousel = Adw.Carousel(hexpand=True, spacing=10, allow_scroll_wheel=False)
         carousel_indicator = Adw.CarouselIndicatorDots(carousel=carousel)
-        for image in self.provider.get_previews(self.app_list_element):
-            carousel.append(image)
+        for widget in self.provider.get_previews(self.app_list_element):
+            carousel.append(widget)
 
         carousel_row.append(carousel)
         carousel_row.append(carousel_indicator)
