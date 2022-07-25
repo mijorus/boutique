@@ -6,7 +6,7 @@ from typing import Callable, List, Union
 from .utils import log
 
 def _command_is_allowed(command: str) -> bool:
-    allowed = ['flatpak']
+    allowed = ['flatpak', 'xdg-open']
     return (command.split(' ')[0] in allowed) or ('--appimage-extract' in command)
 
 _sanitizer = None
