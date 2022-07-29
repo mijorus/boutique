@@ -1,9 +1,7 @@
+<img align="left" alt="Project logo" src="data/icons/hicolor/scalable/apps/it.mijorus.boutique.svg" />
+
 # Boutique
-
-
-<p align="center">
-  <img width="150" src="data/icons/hicolor/scalable/apps/it.mijorus.boutique.svg">
-</p>
+A Fast and Convenient Flatpak frontend
 
 <p align="center">
   <img width="500" src="https://user-images.githubusercontent.com/39067225/180618676-15405cd2-dde9-4b13-970c-dd30958d5c12.png">
@@ -14,9 +12,7 @@
 </p>
 
 
-A work-in-progress Flatpak and Appimages app manager.
-
-Made with GTK4
+A Work-in-Progress Flatpak and Appimages app manager made with GTK4.
 
 ## Testing
 
@@ -27,9 +23,9 @@ Made with GTK4
  3. run these commands:
 
 ```sh
-# builds the project 
+# build the project 
 flatpak-builder build/ it.mijorus.boutique.json --user --force-clean
 
-# runs the project
+# run the project
 flatpak-builder --run build/ it.mijorus.boutique.json boutique
 ```
