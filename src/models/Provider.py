@@ -89,5 +89,5 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def get_previews(self, el: AppListElement) -> List[Gtk.Image]:
+    def get_previews(self, el: AppListElement) -> List[Gtk.Widget]:
         pass

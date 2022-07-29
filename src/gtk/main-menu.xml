@@ -11,6 +11,10 @@
                 <attribute name="action">app.open_file</attribute>
             </item>
             <item>
+                <attribute name="label" translatable="yes">_Open Log File</attribute>
+                <attribute name="action">app.open_log_file</attribute>
+            </item>
+            <item>
                 <attribute name="label" translatable="yes">_About speedy</attribute>
                 <attribute name="action">app.about</attribute>
             </item>

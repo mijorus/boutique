@@ -23,10 +23,18 @@ import subprocess
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio, Adw, Gdk
+from gi.repository import Gtk, Gio, Adw, Gdk, GLib
 from .BoutiqueWindow import BoutiqueWindow
 from .AboutDialog import AboutDialog
 from .providers.providers_list import providers
+from .lib.utils import log
+from .lib.terminal import sh
+
+logging.basicConfig(
+    filename=GLib.get_user_cache_dir() + '/boutique.log',
+    filemode='a',
+    level=logging.DEBUG
+)
 
 
 class BoutiqueApplication(Adw.Application):
@@ -39,9 +47,11 @@ class BoutiqueApplication(Adw.Application):
         self.create_action('about', self.on_about_action)
         self.create_action('preferences', self.on_preferences_action)
         self.create_action('open_file', self.on_open_file_chooser)
+        self.create_action('open_log_file', self.on_open_log_file)
         self.win = None
 
     def do_startup(self):
+        log('\n\n---- Application startup')
         Adw.Application.do_startup(self)
 
         css_provider = Gtk.CssProvider()
@@ -111,6 +121,12 @@ class BoutiqueApplication(Adw.Application):
 
         self.file_chooser_dialog.connect('response', on_open_file_chooser_reponse)
         self.file_chooser_dialog.show()
+
+    def on_open_log_file(self, widget, _):
+        if not self.win:
+            return
+
+        sh(['xdg-open',  GLib.get_user_cache_dir() + '/boutique.log'])
 
 def main(version):
     """The application's entry point."""
