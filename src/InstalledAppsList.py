@@ -177,16 +177,28 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                         row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
                         break
 
-            if not update_is_an_app:
+                if not update_is_an_app:
+                    updatable_libs.append(upg)
+
+            if updatable_libs:
                 upgradable += 1
-                lib_list_element = AppListElement(upg.id, '', upg.id, 'flatpak', InstalledStatus.UPDATE_AVAILABLE)
+                updatable_libs_desc = ', '.join([upl.id for upl in updatable_libs])
+
+                lib_list_element = AppListElement(
+                    'System libraries', 
+                    'The following libraries can be updated: ' + updatable_libs_desc, 
+                    '__updatable_libs__', 
+                    'flatpak', 
+                    InstalledStatus.UPDATE_AVAILABLE
+                )
+
                 app_list_item = AppListBoxItem(lib_list_element, activatable=False, selectable=False, hexpand=True)
                 app_list_item.force_show = True
                 
                 if upg.to_version and ('version' in row._app.extra_data):
                     app_list_item.set_update_version(f'{row._app.extra_data["version"]} > {upg.to_version}')
 
-                # app_list_item.load_icon()
+                app_list_item.load_icon()
                 self.updates_row_list.append( app_list_item )
                 self.updates_row_list_items.append( app_list_item )
                 row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
