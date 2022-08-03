@@ -8,6 +8,7 @@ import re
 from .providers.providers_list import providers
 from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
+from .models.Models import AppUpdateElement
 from .components.FilterEntry import FilterEntry
 from .components.CustomComponents import NoAppsFoundRow
 from .components.AppListBoxItem import AppListBoxItem
@@ -39,10 +40,13 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         # updates row
         self.updates_fetched = False
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
+
+        ## the list box containing all the updatable apps
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
         self.updates_row_list_spinner = Gtk.ListBoxRow(child=Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5), visible=False)
         self.updates_row_list.append(self.updates_row_list_spinner)
         self.updates_row_list.connect('row-activated', self.on_activated_row)
+        ## an array containing all the updatable apps, used for some custom login
         self.updates_row_list_items: list = []
         self.updates_revealter = Gtk.Revealer(child=self.updates_row, transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN, reveal_child=False)
 
@@ -150,17 +154,17 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.updates_row_list_spinner.set_visible(True)
 
         for p, provider in providers.items():
-            # if only_provider is not None and p != only_provider:
-            #     continue
-
             updatable_elements = provider.list_updatables()
 
-            for row in self.installed_apps_list_rows:
-                row_is_upgrdble = False
-                for upg in updatable_elements:
+            updatable_libs: list[AppUpdateElement] = []
+            for upg in updatable_elements:
+                update_is_an_app = False
+
+                for row in self.installed_apps_list_rows:
                     if row._app.id == upg.id:
+                        update_is_an_app = True
+
                         upgradable += 1
-                        row_is_upgrdble = True
                         app_list_item = AppListBoxItem(row._app, activatable=True, selectable=True, hexpand=True)
                         app_list_item.force_show = True
                         
@@ -170,9 +174,23 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                         app_list_item.load_icon()
                         self.updates_row_list.append( app_list_item )
                         self.updates_row_list_items.append( app_list_item )
+                        row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
                         break
 
-                row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE if row_is_upgrdble else InstalledStatus.INSTALLED)
+            if not update_is_an_app:
+                upgradable += 1
+                lib_list_element = AppListElement(upg.id, '', upg.id, 'flatpak', InstalledStatus.UPDATE_AVAILABLE)
+                app_list_item = AppListBoxItem(lib_list_element, activatable=False, selectable=False, hexpand=True)
+                app_list_item.force_show = True
+                
+                if upg.to_version and ('version' in row._app.extra_data):
+                    app_list_item.set_update_version(f'{row._app.extra_data["version"]} > {upg.to_version}')
+
+                # app_list_item.load_icon()
+                self.updates_row_list.append( app_list_item )
+                self.updates_row_list_items.append( app_list_item )
+                row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
+
 
         self.updates_fetched = True
         self.updates_row_list_spinner.set_visible(False)

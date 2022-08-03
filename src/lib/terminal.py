@@ -18,9 +18,9 @@ def sanitize(_input: str) -> str:
 
     return re.sub(_sanitizer, " ", _input)
 
-def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False, safe=False) -> str:
+def sh(command: Union[str, List[str]], return_stderr=False, force=False) -> str:
     to_check = command if isinstance(command, str) else ' '.join(command)
-    if (_command_is_allowed(to_check) is False) and (safe is not True):
+    if (_command_is_allowed(to_check) is False) and (force is not True):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     try:
@@ -30,8 +30,7 @@ def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False, safe
         output = subprocess.run(cmd, encoding='utf-8', shell=False, check=True, capture_output=True)
         output.check_returncode()
     except subprocess.CalledProcessError as e:
-        if not hide_err:
-            print(e.stderr)
+        print(e.stderr)
 
         if return_stderr:
             return e.output
@@ -40,14 +39,14 @@ def sh(command: Union[str, List[str]], hide_err=False, return_stderr=False, safe
 
     return re.sub(r'\n$', '', output.stdout)
 
-def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, safe=False, hide_err=False, return_stderr=False):
+def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, force=False, return_stderr=False):
     to_check = command if isinstance(command, str) else command[0]
-    if (_command_is_allowed(to_check) is False) and (safe is not True):
+    if (_command_is_allowed(to_check) is False) and (force is not True):
         raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     def run_command(command: str, callback: Callable[[str], None]=None):
         try:
-            output = sh(command, safe=safe, hide_err=hide_err, return_stderr=return_stderr)
+            output = sh(command, force=force, return_stderr=return_stderr)
 
             if callback:
                 callback(re.sub(r'\n$', '', output))

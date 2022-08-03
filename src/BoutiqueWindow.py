@@ -48,7 +48,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
         self.set_titlebar(self.titlebar)
 
         self.set_title('Boutique')
-        self.set_default_size(600, 700)
+        self.set_default_size(700, 700)
 
         # Create the "stack" widget for the "installed apps" view
         self.installed_stack = Gtk.Stack()

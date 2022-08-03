@@ -150,7 +150,7 @@ class AppImageProvider(Provider):
 
     def run(self, el: AppListElement):
         if self.get_appimages_default_destination_path() in el.extra_data['file_path']:
-            terminal.threaded_sh([f'{el.extra_data["file_path"]}'], safe=True)
+            terminal.threaded_sh([f'{el.extra_data["file_path"]}'], force=True)
 
     def can_install_file(self, file: Gio.File) -> bool:
         return get_giofile_content_type(file) == 'application/vnd.appimage'

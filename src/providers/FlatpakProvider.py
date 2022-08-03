@@ -350,7 +350,7 @@ class FlatpakProvider(Provider):
             update_output = self.list_updatables_cache
         else:
             self.update_remote_ls_updatable_cache()
-            update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True, hide_err=True)
+            update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
             self.list_updatables_cache = update_output
         
         if not '1.\t' in update_output:
@@ -488,7 +488,7 @@ class FlatpakProvider(Provider):
         list_element: AppListElement = data['list_element']
 
         def install_old_version():
-            terminal.sh(['flatpak', 'kill', list_element.id], hide_err=True, return_stderr=True)
+            terminal.sh(['flatpak', 'kill', list_element.id], return_stderr=True)
             self.refresh_installed_status_callback(status=InstalledStatus.UPDATING)
             
             try:
@@ -536,9 +536,12 @@ class FlatpakProvider(Provider):
         """Updated the global remote_ls_cache varaible"""
         if self.remote_ls_updatable_cache is None:
             self.remote_ls_updatable_cache = []
-            terminal.sh(['flatpak', 'update', '--appstream'])
+            terminal.sh(['flatpak', 'update', '--appstream'], return_stderr=False)
 
-            self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
+            try:
+                self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
+            except Exception as e:
+                self.remote_ls_updatable_cache = []
 
     def is_updatable(self, app_id: str) -> bool:
         if self.update_section_cache == None:
