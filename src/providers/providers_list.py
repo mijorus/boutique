@@ -1,11 +1,11 @@
 from typing import Dict
 from ..models.Provider import Provider
-from .FlatpakProvider import FlatpakProvider
 from .AppImageProvider import AppImageProvider
+# from .FlatpakProvider import FlatpakProvider
 
 # A list containing all the "Providers" currently only Flatpak is supported
 # but I might need to add other ones in the future
 providers: Dict[str, Provider] = { 
-    'flatpak': FlatpakProvider(),
+    # 'flatpak': FlatpakProvider(),
     'appimage': AppImageProvider()
 }
