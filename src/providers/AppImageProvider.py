@@ -8,7 +8,6 @@ import os
 import shutil
 import time
 import hashlib
-import requests
 import html2text
 import subprocess
 import filecmp
@@ -52,10 +51,10 @@ class AppImageProvider(Provider):
                         entry = DesktopEntry.DesktopEntry(filename=gfile.get_path())
                         if entry.getExec().startswith(default_folder_path) and GLib.file_test(entry.getExec(), GLib.FileTest.EXISTS):
                             output.append(AppListElement(
-                                name=entry.getName() + ' (AppImage)',
+                                name=entry.getName(),
                                 description=entry.getComment(),
                                 icon=entry.getIcon(),
-                                app_id=entry.getExec(),
+                                app_id='Appimage',
                                 installed_status=InstalledStatus.INSTALLED,
                                 file_path=entry.getExec(),
                                 provider='appimage',
@@ -153,7 +152,8 @@ class AppImageProvider(Provider):
             terminal.threaded_sh([f'{el.extra_data["file_path"]}'], force=True)
 
     def can_install_file(self, file: Gio.File) -> bool:
-        return get_giofile_content_type(file) == 'application/vnd.appimage'
+        content_type = get_giofile_content_type(file)
+        return content_type in ['application/vnd.appimage', 'application/x-iso9660-appimage']
 
     def is_updatable(self, app_id: str) -> bool:
         pass
@@ -281,12 +281,8 @@ class AppImageProvider(Provider):
 
     def get_source_details(self, list_element: AppListElement) -> tuple[str, str]:
         pass
-    
-    def set_refresh_installed_status_callback(self, callback: Optional[Callable]):
-        pass
 
     def post_file_extraction_cleanup(self, extraction: ExtractedAppImage):
-
         if extraction.container_folder.query_exists():
             if extraction.container_folder.get_path().startswith(GLib.get_user_cache_dir()):
                 shutil.rmtree(extraction.container_folder.get_path())

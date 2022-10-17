@@ -38,7 +38,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.refresh_list()
 
         # updates row
-        self.updates_fetched = False
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
 
         ## the list box containing all the updatable apps
@@ -71,12 +70,12 @@ class InstalledAppsList(Gtk.ScrolledWindow):
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
 
-        self.refresh_upgradable()
         self.set_child(clamp)
 
     def on_activated_row(self, listbox, row: Gtk.ListBoxRow):
+        print()
         """Emit and event that changes the active page of the Stack in the parent widget"""
-        if not self.update_all_btn.get_sensitive() or not self.updates_fetched:
+        if not self.update_all_btn.get_sensitive():
             return
 
         self.emit('selected-app', row._app)
@@ -104,7 +103,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.no_apps_found_row.set_visible(False)
         self.installed_apps_list_slot.append(self.installed_apps_list)
         
-        self.installed_apps_list.set_sort_func(self.sort_installed_apps_list)
+        self.installed_apps_list.set_sort_func(lambda r, s: self.sort_installed_apps_list(r, s))
         self.installed_apps_list.invalidate_sort()
 
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
@@ -137,88 +136,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
                 self.no_apps_found_row.set_visible(False)
                 break
 
-    def _refresh_upgradable_thread(self, only_provider: Optional[str]=None):
-        """Runs the background task to check for app updates"""
-        for widget in self.updates_row_list_items:
-            self.updates_row_list.remove(widget)
-
-        self.updates_row_list_items = []
-
-        if self.installed_apps_list:
-            self.installed_apps_list.set_opacity(0.5)
-
-        self.updates_revealter.set_reveal_child(not self.updates_fetched)
-        self.updates_title_label.set_label('Searching for updates...')
-
-        upgradable = 0
-        self.updates_row_list_spinner.set_visible(True)
-
-        for p, provider in providers.items():
-            updatable_elements = provider.list_updatables()
-
-            updatable_libs: list[AppUpdateElement] = []
-            for upg in updatable_elements:
-                update_is_an_app = False
-
-                for row in self.installed_apps_list_rows:
-                    if row._app.id == upg.id:
-                        update_is_an_app = True
-
-                        upgradable += 1
-                        app_list_item = AppListBoxItem(row._app, activatable=True, selectable=True, hexpand=True)
-                        app_list_item.force_show = True
-                        
-                        if upg.to_version and ('version' in row._app.extra_data):
-                            app_list_item.set_update_version(f'{row._app.extra_data["version"]} > {upg.to_version}')
-
-                        app_list_item.load_icon()
-                        self.updates_row_list.append( app_list_item )
-                        self.updates_row_list_items.append( app_list_item )
-                        row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
-                        break
-
-                if not update_is_an_app:
-                    updatable_libs.append(upg)
-
-            if updatable_libs:
-                upgradable += 1
-                updatable_libs_desc = ', '.join([upl.id for upl in updatable_libs])
-
-                lib_list_element = AppListElement(
-                    'System libraries', 
-                    'The following libraries can be updated: ' + updatable_libs_desc, 
-                    '__updatable_libs__', 
-                    'flatpak', 
-                    InstalledStatus.UPDATE_AVAILABLE
-                )
-
-                app_list_item = AppListBoxItem(lib_list_element, activatable=False, selectable=False, hexpand=True)
-                app_list_item.force_show = True
-                
-                if upg.to_version and ('version' in row._app.extra_data):
-                    app_list_item.set_update_version(f'{row._app.extra_data["version"]} > {upg.to_version}')
-
-                app_list_item.load_icon()
-                self.updates_row_list.append( app_list_item )
-                self.updates_row_list_items.append( app_list_item )
-                row._app.set_installed_status(InstalledStatus.UPDATE_AVAILABLE)
-
-
-        self.updates_fetched = True
-        self.updates_row_list_spinner.set_visible(False)
-        self.installed_apps_list.set_opacity(1)
-        self.updates_revealter.set_reveal_child(upgradable > 0)
-        self.updates_title_label.set_label('Available updates')
-        self.trigger_filter_list(self.filter_entry)
-
-    def refresh_upgradable(self, only_provider: Optional[str]=None):
-        for p, provider in providers.items():
-            if provider.updates_need_refresh():
-                thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ), daemon=True)
-                thread.start()
-
-                break
-
     def after_update_all(self, result: bool, prov: str):
         if result and (not self.update_all_btn.has_css_class('destructive-action')):
             if self.updates_row_list and prov == [*providers.keys()][-1]:
@@ -229,8 +146,6 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         else:
             self.update_all_btn.set_label('Error')
             self.update_all_btn.set_css_classes(['destructive-action'])
-
-        self.refresh_upgradable(only_provider=prov)
 
     def on_update_all_btn_clicked(self, widget: Gtk.Button):
         if not self.updates_row_list:
@@ -243,7 +158,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         for p, provider in providers.items():
             provider.update_all(self.after_update_all)
 
-    def sort_installed_apps_list(widget: Gtk.ListBox, row: AppListBoxItem, row1: AppListBoxItem):
+    def sort_installed_apps_list(self, row: AppListBoxItem, row1: AppListBoxItem):
         if (not hasattr(row1, '_app')):
             return 1
 

@@ -28,7 +28,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.details_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.icon_slot = Gtk.Box()
 
-        title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2)
+        title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2, homogeneous=True)
         self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START)
         self.version = Gtk.Label(label='', halign=Gtk.Align.START, css_classes=['dim-label'])
         self.app_id = Gtk.Label(label='', 
@@ -39,7 +39,7 @@ class AppDetails(Gtk.ScrolledWindow):
             max_width_chars=100, 
         )
 
-        for el in [self.title, self.app_id, self.version]:
+        for el in [self.app_id, self.title, self.version]:
             title_col.append(el)
 
         self.source_selector_hdlr = None
@@ -55,13 +55,6 @@ class AppDetails(Gtk.ScrolledWindow):
         for el in [self.icon_slot, title_col, self.secondary_action_button, self.primary_action_button]:
             self.details_row.append(el)
 
-        #row
-        self.previews_row = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, 
-            spacing=10, 
-            margin_top=20,
-        )
-
         # row
         self.desc_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=20)
         self.description = Gtk.Label(label='', halign=Gtk.Align.START, wrap=True, selectable=True)
@@ -76,7 +69,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
 
-        for el in [self.details_row, self.previews_row, self.desc_row, self.third_row]:
+        for el in [self.details_row, self.desc_row, self.third_row]:
             self.main_box.append(el)
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
@@ -123,14 +116,13 @@ class AppDetails(Gtk.ScrolledWindow):
 
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
         self.update_installation_status(check_installed=True)
-        self.provider.set_refresh_installed_status_callback(self.provider_refresh_installed_status)
 
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
         
         self.details_row.remove(self.icon_slot)
         self.icon_slot = icon
-        icon.set_pixel_size(45)
+        icon.set_pixel_size(100)
         self.details_row.prepend(self.icon_slot)
 
         self.title.set_label(cleanhtml(el.name))
@@ -141,8 +133,6 @@ class AppDetails(Gtk.ScrolledWindow):
         
         self.description.set_label('')
         threading.Thread(target=self.load_description).start()
-
-        threading.Thread(target=self.load_previews).start()
 
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -293,34 +283,6 @@ class AppDetails(Gtk.ScrolledWindow):
 
         if final: 
             self.emit('refresh-updatable')
-
-    def load_previews(self):
-        self.show_row_spinner(True)
-
-        if self.previews_row.get_first_child():
-            self.previews_row.remove( self.previews_row.get_first_child() )
-
-        carousel_row = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=10, 
-            margin_top=20,
-        )
-
-        carousel = Adw.Carousel(hexpand=True, spacing=10, allow_scroll_wheel=False)
-        carousel_indicator = Adw.CarouselIndicatorDots(carousel=carousel)
-        for widget in self.provider.get_previews(self.app_list_element):
-            carousel.append(widget)
-
-        carousel_row.append(carousel)
-        carousel_row.append(carousel_indicator)
-
-        carousel_row_revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN)
-        carousel_row_revealer.set_child(carousel_row)
-
-        self.previews_row.append(carousel_row_revealer)
-        carousel_row_revealer.set_reveal_child(True)
-
-        self.show_row_spinner(False)
 
     def show_row_spinner(self, status: bool):
         self.desc_row_spinner.set_visible(status)
