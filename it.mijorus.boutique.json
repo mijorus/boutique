@@ -1,10 +1,10 @@
 {
-    "app-id" : "it.mijorus.boutique",
-    "runtime" : "org.gnome.Platform",
-    "runtime-version" : "42",
-    "sdk" : "org.gnome.Sdk",
-    "command" : "boutique",
-    "finish-args" : [
+    "app-id": "it.mijorus.boutique",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "43",
+    "sdk": "org.gnome.Sdk",
+    "command": "boutique",
+    "finish-args": [
         "--share=ipc",
         "--share=network",
         "--socket=wayland",
@@ -19,7 +19,7 @@
         "--filesystem=xdg-data/icons:ro",
         "--filesystem=home"
     ],
-    "cleanup" : [
+    "cleanup": [
         "/include",
         "/lib/pkgconfig",
         "/man",
@@ -30,16 +30,398 @@
         "*.la",
         "*.a"
     ],
-    "modules" : [
+    "build-options": {
+        "env": {
+            "V": "1",
+            "BASH_COMPLETIONSDIR": "/app/share/bash-completion/completions",
+            "MOUNT_FUSE_PATH": "../tmp/"
+        }
+    },
+    "modules": [
         "./python3-requirements.json",
         {
-            "name" : "boutique",
-            "builddir" : true,
-            "buildsystem" : "meson",
-            "sources" : [
+            "name": "gperftools",
+            "cleanup": [
+                "/bin",
+                "/lib/libprofiler.*",
+                "/lib/libtcmalloc_debug.*",
+                "/lib/libtcmalloc.*",
+                "/lib/libtcmalloc_and_profiler.*",
+                "/lib/libtcmalloc_minimal_debug.*",
+                "/share/doc"
+            ],
+            "sources": [
                 {
-                    "type" : "dir",
-                    "path" : "./"
+                    "type": "git",
+                    "url": "https://github.com/gperftools/gperftools.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "uncrustify",
+            "buildsystem": "cmake-ninja",
+            "config-opts": [
+                "-DCMAKE_BUILD_TYPE=Release"
+            ],
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/uncrustify/uncrustify/archive/uncrustify-0.71.0.tar.gz",
+                    "sha256": "403a0f34463c0d6b0fbf230d8a03b7af9f493faa235208417793350db062003c"
+                }
+            ]
+        },
+        {
+            "name": "libfuse",
+            "config-opts": [
+                "UDEV_RULES_PATH=/app/etc/udev/rules.d",
+                "INIT_D_PATH=/app/etc/init.d"
+            ],
+            "cleanup": [
+                "/bin/ulockmgr_server"
+            ],
+            "post-install": [
+                "install -m a+rx fusermount-wrapper.sh /app/bin/fusermount"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/libfuse/libfuse/releases/download/fuse-2.9.9/fuse-2.9.9.tar.gz",
+                    "sha256": "d0e69d5d608cc22ff4843791ad097f554dd32540ddc9bed7638cc6fea7c1b4b5"
+                },
+                {
+                    "type": "patch",
+                    "path": "build-aux/flatpak/fuse-2.9.2-namespace-conflict-fix.patch"
+                },
+                {
+                    "type": "patch",
+                    "path": "build-aux/flatpak/fuse-disable-sys-mount-under-flatpak.patch"
+                },
+                {
+                    "type": "patch",
+                    "path": "build-aux/flatpak/fuse-2.9.2-closefrom.patch"
+                },
+                {
+                    "type": "file",
+                    "path": "build-aux/flatpak/fusermount-wrapper.sh"
+                }
+            ]
+        },
+        {
+            "name": "intltool",
+            "cleanup": [
+                "*"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz",
+                    "sha256": "67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd"
+                }
+            ]
+        },
+        {
+            "name": "polkit",
+            "config-opts": [
+                "--disable-polkitd",
+                "--disable-man-pages",
+                "--disable-introspection",
+                "--disable-examples",
+                "--disable-gtk-doc",
+                "--disable-libelogind",
+                "--disable-libsystemd-login",
+                "--with-systemdsystemunitdir=no",
+                "--with-authdb=dummy",
+                "--with-authfw=none"
+            ],
+            "rm-configure": true,
+            "cleanup": [
+                "/bin/*",
+                "/etc/pam.d",
+                "/etc/dbus-1",
+                "/share/dbus-1/system-services/*",
+                "/share/polkit-1",
+                "/lib/polkit-1"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://www.freedesktop.org/software/polkit/releases/polkit-0.116.tar.gz",
+                    "sha256": "88170c9e711e8db305a12fdb8234fac5706c61969b94e084d0f117d8ec5d34b1"
+                },
+                {
+                    "type": "patch",
+                    "path": "build-aux/flatpak/polkit-build-Add-option-to-build-without-polkitd.patch"
+                },
+                {
+                    "type": "file",
+                    "path": "build-aux/flatpak/polkit-autogen",
+                    "dest-filename": "autogen.sh"
+                }
+            ]
+        },
+        {
+            "name": "universal-ctags",
+            "cleanup": [
+                "/bin/readtags"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/universal-ctags/ctags.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "libssh2",
+            "buildsystem": "cmake-ninja",
+            "config-opts": [
+                "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+                "-DCMAKE_INSTALL_LIBDIR:PATH=/app/lib",
+                "-DBUILD_SHARED_LIBS:BOOL=ON"
+            ],
+            "cleanup": [
+                "/share/doc"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/libssh2/libssh2.git",
+                    "tag": "libssh2-1.10.0"
+                }
+            ]
+        },
+        {
+            "name": "libgit2",
+            "buildsystem": "cmake-ninja",
+            "config-opts": [
+                "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+                "-DBUILD_SHARED_LIBS:BOOL=ON",
+                "-DUSE_SSH:BOOL=ON",
+                "-DUSE_THREADS:BOOL=ON"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/libgit2/libgit2.git",
+                    "tag": "v1.5.0"
+                }
+            ]
+        },
+        {
+            "name": "libgit2-glib",
+            "config-opts": [
+                "--libdir=/app/lib",
+                "--buildtype=debugoptimized"
+            ],
+            "buildsystem": "meson",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/libgit2-glib.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "libeditorconfig",
+            "buildsystem": "cmake-ninja",
+            "config-opts": [
+                "-DBUILD_DOCUMENTATION=OFF",
+                "-DINSTALL_HTML_DOC=OFF"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/editorconfig/editorconfig-core-c.git",
+                    "tag": "v0.12.5"
+                }
+            ]
+        },
+        {
+            "name": "vte",
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Dgtk4=true",
+                "-Dvapi=false"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/vte.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "libpeas",
+            "buildsystem": "meson",
+            "cleanup": [
+                "/bin/*",
+                "/lib/peas-demo",
+                "/lib/libpeas-gtk*"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/libpeas.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "template-glib",
+            "config-opts": [
+                "--libdir=/app/lib",
+                "--buildtype=debugoptimized"
+            ],
+            "buildsystem": "meson",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/template-glib.git",
+                    "branch": "main"
+                }
+            ]
+        },
+        {
+            "name": "jsonrpc-glib",
+            "config-opts": [
+                "--libdir=/app/lib",
+                "--buildtype=debugoptimized"
+            ],
+            "buildsystem": "meson",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/jsonrpc-glib.git",
+                    "branch": "main"
+                }
+            ]
+        },
+        {
+            "name": "sysprof",
+            "config-opts": [
+                "--libdir=/app/lib",
+                "--buildtype=debugoptimized",
+                "-Dgtk=true",
+                "-Dsysprofd=host",
+                "-Dagent=true"
+            ],
+            "buildsystem": "meson",
+            "builddir": true,
+            "cleanup": [
+                "/libexec/sysprof",
+                "/share/appdata",
+                "/share/applications",
+                "/share/metainfo",
+                "/share/mime/packages"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/sysprof.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "ostree",
+            "config-opts": [
+                "--disable-man",
+                "--with-curl",
+                "--without-soup",
+                "--without-libsystemd"
+            ],
+            "cleanup": [
+                "/bin",
+                "/etc/grub.d",
+                "/etc/ostree",
+                "/share/ostree",
+                "/libexec"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/ostreedev/ostree.git",
+                    "tag": "v2022.2"
+                }
+            ]
+        },
+        {
+            "name": "libyaml",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/yaml/libyaml.git",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "libxmlb",
+            "config-opts": [
+                "--libdir=/app/lib",
+                "--buildtype=debugoptimized",
+                "-Dgtkdoc=false",
+                "-Dintrospection=false",
+                "-Dtests=false",
+                "-Dcli=false"
+            ],
+            "buildsystem": "meson",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/hughsie/libxmlb.git",
+                    "branch": "main"
+                }
+            ]
+        },
+        {
+            "name": "libstemmer",
+            "buildsystem": "cmake-ninja",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/zvelo/libstemmer",
+                    "branch": "master"
+                }
+            ]
+        },
+        {
+            "name": "appstream",
+            "config-opts": [
+                "--libdir=/app/lib",
+                "--buildtype=debugoptimized",
+                "-Dgir=false",
+                "-Dapidocs=false",
+                "-Dinstall-docs=false"
+            ],
+            "buildsystem": "meson",
+            "builddir": true,
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/ximion/appstream.git",
+                    "commit": "565ff2f3bcf4497c7ffbd298c95c24ad0b7c3d1e"
+                }
+            ]
+        },
+        {
+            "name": "boutique",
+            "builddir": true,
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": "./"
                 }
             ]
         }

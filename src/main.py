@@ -22,6 +22,7 @@ import subprocess
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+gi.require_version('Flatpak', '1.0')
 
 from gi.repository import Gtk, Gio, Adw, Gdk, GLib
 from .BoutiqueWindow import BoutiqueWindow
@@ -41,8 +42,7 @@ class BoutiqueApplication(Adw.Application):
     """The main application singleton class."""
 
     def __init__(self):
-        super().__init__(application_id='it.mijorus.boutique',
-                         flags=Gio.ApplicationFlags.HANDLES_OPEN)
+        super().__init__(application_id='it.mijorus.boutique', flags=Gio.ApplicationFlags.HANDLES_OPEN)
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
         self.create_action('preferences', self.on_preferences_action)
@@ -56,7 +56,7 @@ class BoutiqueApplication(Adw.Application):
 
         css_provider = Gtk.CssProvider()
         css_provider.load_from_resource('/it/mijorus/boutique/assets/style.css')
-        # Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def do_activate(self):
         """Called when the application is activated.
@@ -94,7 +94,7 @@ class BoutiqueApplication(Adw.Application):
         Args:
             name: the name of the action
             callback: the function to be called when the action is
-              activated
+            activated
             shortcuts: an optional list of accelerators
         """
         action = Gio.SimpleAction.new(name, None)
