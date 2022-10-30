@@ -8,7 +8,6 @@ import os
 import shutil
 import time
 import hashlib
-import requests
 import html2text
 import subprocess
 import filecmp
@@ -309,7 +308,7 @@ class AppImageProvider(Provider):
             shutil.rmtree(folder.get_path())
 
         if folder.make_directory_with_parents(None):
-            dest_file = Gio.File.new_for_path( folder.get_path() + f'/{temp_file}')
+            dest_file = Gio.File.new_for_path( folder.get_path() + f'/{temp_file}' )
             file_copy = file.copy(
                 dest_file, 
                 Gio.FileCopyFlags.OVERWRITE, 

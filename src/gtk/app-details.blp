@@ -1,0 +1,23 @@
+using Gtk 4.0;
+using Adw 1;
+
+Gtk.Box {
+  orientation: vertical;
+  margin-top: 10;
+
+  Gtk.Image {
+    icon_name: "application-x-executable";
+    pixel-size: 150;
+  }
+  
+  Gtk.Label {
+    label: "Spotify";
+    styles ["title", "title-1"]
+    margin-bottom: 10
+  }
+  
+  Gtk.Label {
+    label: "com.Spotify.player";
+    styles ["dim-label", "subtitle"]
+  }
+}

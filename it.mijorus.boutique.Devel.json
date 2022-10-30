@@ -10,14 +10,24 @@
         "--socket=wayland",
         "--socket=fallback-x11",
         "--device=dri",
+
+        "--system-talk-name=org.freedesktop.PolicyKit",
+        "--system-talk-name=org.freedesktop.Flatpak.SystemHelper",
+        "--filesystem=~/.local/share/flatpak:ro",
+        "--filesystem=/var/lib/flatpak:ro",
+        "--talk-name=org.freedesktop.Flatpak",
+        "--talk-name=org.a11y.Bus",
+        "--filesystem=xdg-data/applications:ro",
+        "--filesystem=xdg-data/flatpak:ro",
+        "--filesystem=/var/lib/flatpak:ro",
+
         "--talk-name=org.freedesktop.FileManager1",
         "--talk-name=org.freedesktop.Flatpak",
         "--system-talk-name=org.freedesktop.Flatpak",
         "--filesystem=~/.local/share",
         "--filesystem=~/.local/share/flatpak:ro",
         "--filesystem=xdg-data/icons/hicolor:ro",
-        "--filesystem=xdg-data/icons:ro",
-        "--filesystem=home"
+        "--filesystem=xdg-data/icons:ro"
     ],
     "cleanup" : [
         "/include",

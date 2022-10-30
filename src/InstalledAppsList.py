@@ -104,7 +104,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.no_apps_found_row.set_visible(False)
         self.installed_apps_list_slot.append(self.installed_apps_list)
         
-        self.installed_apps_list.set_sort_func(self.sort_installed_apps_list)
+        self.installed_apps_list.set_sort_func(lambda r1, r2: self.sort_installed_apps_list(r1, r2))
         self.installed_apps_list.invalidate_sort()
 
         self.installed_apps_list.connect('row-activated', self.on_activated_row)
@@ -212,12 +212,13 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         self.trigger_filter_list(self.filter_entry)
 
     def refresh_upgradable(self, only_provider: Optional[str]=None):
-        for p, provider in providers.items():
-            if provider.updates_need_refresh():
-                thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ), daemon=True)
-                thread.start()
+        self.updates_fetched = True
+        # for p, provider in providers.items():
+        #     if provider.updates_need_refresh():
+        #         thread = threading.Thread(target=self._refresh_upgradable_thread, args=(only_provider, ), daemon=True)
+        #         thread.start()
 
-                break
+        #         break
 
     def after_update_all(self, result: bool, prov: str):
         if result and (not self.update_all_btn.has_css_class('destructive-action')):
@@ -243,7 +244,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
         for p, provider in providers.items():
             provider.update_all(self.after_update_all)
 
-    def sort_installed_apps_list(widget: Gtk.ListBox, row: AppListBoxItem, row1: AppListBoxItem):
+    def sort_installed_apps_list(self, row: AppListBoxItem, row1: AppListBoxItem):
         if (not hasattr(row1, '_app')):
             return 1
 

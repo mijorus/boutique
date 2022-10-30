@@ -9,6 +9,7 @@ from .models.Provider import Provider
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
 from .lib.utils import cleanhtml, key_in_dict, set_window_cursor, get_application_window
+from .components.CustomComponents import CenteringBox
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
@@ -25,14 +26,14 @@ class AppDetails(Gtk.ScrolledWindow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=10, margin_bottom=10, margin_start=20, margin_end=20,)
 
         # 1st row
-        self.details_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.details_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.icon_slot = Gtk.Box()
 
-        title_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2)
-        self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.START)
-        self.version = Gtk.Label(label='', halign=Gtk.Align.START, css_classes=['dim-label'])
+        title_col = CenteringBox(orientation=Gtk.Orientation.VERTICAL, hexpand=True, spacing=2)
+        self.title = Gtk.Label(label='', css_classes=['title-1'], hexpand=True, halign=Gtk.Align.CENTER)
+        self.version = Gtk.Label(label='', halign=Gtk.Align.CENTER, css_classes=['dim-label'])
         self.app_id = Gtk.Label(label='', 
-            halign=Gtk.Align.START, 
+            halign=Gtk.Align.CENTER, 
             selectable=True, 
             css_classes=['dim-label'], 
             ellipsize=Pango.EllipsizeMode.END,
@@ -49,10 +50,15 @@ class AppDetails(Gtk.ScrolledWindow):
         self.primary_action_button = Gtk.Button(label='Install', valign=Gtk.Align.CENTER)
         self.secondary_action_button = Gtk.Button(label='', valign=Gtk.Align.CENTER, visible=False)
 
+        # Action buttons
+        action_buttons_row = CenteringBox(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
         self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
 
-        for el in [self.icon_slot, title_col, self.secondary_action_button, self.primary_action_button]:
+        for el in [self.secondary_action_button, self.primary_action_button]:
+            action_buttons_row.append(el)
+
+        for el in [self.icon_slot, title_col, action_buttons_row]:
             self.details_row.append(el)
 
         #row
@@ -130,7 +136,7 @@ class AppDetails(Gtk.ScrolledWindow):
         
         self.details_row.remove(self.icon_slot)
         self.icon_slot = icon
-        icon.set_pixel_size(45)
+        icon.set_pixel_size(128)
         self.details_row.prepend(self.icon_slot)
 
         self.title.set_label(cleanhtml(el.name))
@@ -142,7 +148,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.description.set_label('')
         threading.Thread(target=self.load_description).start()
 
-        threading.Thread(target=self.load_previews).start()
+        # threading.Thread(target=self.load_previews).start()load_previews
 
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
