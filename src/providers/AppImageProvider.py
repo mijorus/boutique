@@ -24,12 +24,15 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Pango
 
 class ExtractedAppImage():
     desktop_entry: Optional[DesktopEntry.DesktopEntry]
-    extraction_folder: Gio.File
+    extraction_folder: Optional[Gio.File]
     container_folder: Gio.File
     appimage_file: Gio.File
-    desktop_file: Gio.File
+    desktop_file: Optional[Gio.File]
+    icon_file: Optional[Gio.File]
 
 class AppImageProvider(Provider):
+    PROVIDER_NAME='appimage'
+
     def __init__(self):
         # refresh_installed_status_callback: Callable
         pass
@@ -57,7 +60,7 @@ class AppImageProvider(Provider):
                                 app_id=entry.getExec(),
                                 installed_status=InstalledStatus.INSTALLED,
                                 file_path=entry.getExec(),
-                                provider='appimage',
+                                provider=self.PROVIDER_NAME,
                                 desktop_entry=entry
                             ))
 
@@ -85,7 +88,9 @@ class AppImageProvider(Provider):
     def get_icon(self, el: AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
         icon_path = None
 
-        if 'desktop_entry' in el.extra_data:
+        if 'tmp_icon' in el.extra_data and el.extra_data['tmp_icon']:
+            icon_path = el.extra_data['tmp_icon'].get_path()
+        elif 'desktop_entry' in el.extra_data:
             icon_path = el.extra_data['desktop_entry'].getIcon()
 
         if icon_path and os.path.exists(icon_path):
@@ -96,7 +101,7 @@ class AppImageProvider(Provider):
             if ('desktop_entry' in el.extra_data) and icon_theme.has_icon(el.extra_data['desktop_entry'].getIcon()):
                 return Gtk.Image.new_from_icon_name(el.extra_data['desktop_entry'].getIcon())
 
-            return Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
+            return Gtk.Image(icon_name='application-x-executable-symbolic')
 
     def uninstall(self, el: AppListElement, callback: Callable[[bool], None]):
         try:
@@ -152,7 +157,7 @@ class AppImageProvider(Provider):
             terminal.threaded_sh([f'{el.extra_data["file_path"]}'], force=True)
 
     def can_install_file(self, file: Gio.File) -> bool:
-        return get_giofile_content_type(file) == 'application/vnd.appimage'
+        return get_giofile_content_type(file) in ['application/vnd.appimage', 'application/x-iso9660-appimage']
 
     def is_updatable(self, app_id: str) -> bool:
         pass
@@ -164,7 +169,6 @@ class AppImageProvider(Provider):
             extracted_appimage = None
 
             try:
-                # desktop_entry, extraction_folder, appimage_file, desktop_file = self.extract_appimage(file_path=list_element.extra_data['file_path'])
                 extracted_appimage = self.extract_appimage(file_path=list_element.extra_data['file_path'])
                 dest_file_info = extracted_appimage.appimage_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS)
 
@@ -195,8 +199,8 @@ class AppImageProvider(Provider):
                         dest_icon_file_path = 'applications-other' # a default icon
 
                         if extracted_appimage.desktop_entry:
-                            icon_file = f'{extracted_appimage.extraction_folder.get_path()}/{extracted_appimage.desktop_entry.getIcon()}.png'
-                            dest_icon_file_path = f'{appimages_destination_path}/icons/{dest_file_info.get_name()}.png'
+                            icon_file = extracted_appimage.icon_file
+                            dest_icon_file_path = f'{appimages_destination_path}/icons/{dest_file_info.get_name()}'
 
                         if icon_file and os.path.exists(icon_file):
                             if not os.path.exists(f'{appimages_destination_path}/icons'):
@@ -225,7 +229,6 @@ class AppImageProvider(Provider):
                                 desktop_file_content,
                                 flags=re.MULTILINE
                             )
-                            
 
                             final_app_name = extracted_appimage.appimage_file.get_basename()
                             if extracted_appimage.desktop_entry:
@@ -265,14 +268,28 @@ class AppImageProvider(Provider):
         app_name: str = file.get_parse_name().split('/')[-1]
         app_name = re.sub(r'\.appimage$', '', app_name, flags=re.IGNORECASE)
         app_name = re.sub(r'\.x86_64$', '', app_name, flags=re.IGNORECASE)
+        desktop_entry = None
+
+        if get_giofile_content_type(file) == 'application/vnd.appimage':
+            try:
+                extracted = self.extract_appimage(file.get_path())
+
+                if extracted.desktop_entry.getName():
+                    app_name = extracted.desktop_entry.getName()
+                    desktop_entry = extracted.desktop_entry
+
+            except Exception as e:
+                logging.error(e)
 
         return AppListElement(
             name=app_name, 
             description='', 
             app_id=hashlib.md5(open(file.get_path(), 'rb').read()).hexdigest(), 
-            provider='appimage', 
+            provider=self.PROVIDER_NAME, 
             installed_status=InstalledStatus.NOT_INSTALLED,
-            file_path=file.get_path()
+            file_path=file.get_path(),
+            desktop_entry=desktop_entry,
+            tmp_icon=extracted.icon_file
         )
 
     def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
@@ -293,16 +310,22 @@ class AppImageProvider(Provider):
     def extract_appimage(self, file_path: str) -> ExtractedAppImage:
         file = Gio.File.new_for_path(file_path)
 
+        if get_giofile_content_type(file) in ['application/x-iso9660-appimage']:
+            raise Exception('This file format cannot be extracted!')
+
+        icon_file: Optional[Gio.File] = None
+        desktop_file: Optional[Gio.File] = None
+
         desktop_entry: Optional[DesktopEntry.DesktopEntry] = None
         extraction_folder = None
 
-        ## hash file
         temp_file = None
 
+        ## hash file
         with open(file.get_path(), 'rb') as f:
             temp_file = 'boutique_appimage_' + hashlib.md5(f.read()).hexdigest()
 
-        folder = Gio.File.new_for_path(GLib.get_user_cache_dir() + f'/appimages/{temp_file}')
+        folder = Gio.File.new_for_path(GLib.get_tmp_dir() + f'/it.mijorus.boutique/appimages/{temp_file}')
 
         if folder.query_exists():
             shutil.rmtree(folder.get_path())
@@ -321,14 +344,13 @@ class AppImageProvider(Provider):
                 squash_folder = Gio.File.new_for_path(f'{folder.get_path()}/squashfs-root')
                 
                 # set exec permission for dest_file
-                # dest_file.set_attribute_string('unix::mode', '0755', Gio.FileQueryInfoFlags.NONE)
                 os.chmod(dest_file.get_path(), 0o755)
+                logging.info('Appimage, extracting ' + file_path)
                 terminal.sh(["bash", "-c", f"cd {folder.get_path()} && {dest_file.get_path()} --appimage-extract "])
 
                 if squash_folder.query_exists():
                     extraction_folder = squash_folder
 
-                    desktop_file: Optional[Gio.File] = None
                     desktop_files: list[str] = filter(lambda x: x.endswith('.desktop'), os.listdir(f'{folder.get_path()}/squashfs-root'))
 
                     for d in desktop_files:
@@ -339,13 +361,23 @@ class AppImageProvider(Provider):
 
                     if desktop_file:
                         desktop_entry = DesktopEntry.DesktopEntry(desktop_file.get_path())
-        
+
+                        if desktop_entry.getIcon():
+                            # https://github.com/AppImage/AppImageSpec/blob/master/draft.md#the-filesystem-image
+                            for icon_xt in ['.png', '.svgz', '.svg']:
+                                icon_xt_f = Gio.File.new_for_path(extraction_folder.get_path() + f'/{desktop_entry.getIcon()}{icon_xt}' )
+
+                                if icon_xt_f.query_exists():
+                                    icon_file = icon_xt_f
+                                    break
+
         result = ExtractedAppImage()
         result.desktop_entry = desktop_entry
         result.extraction_folder = extraction_folder
         result.container_folder = folder
         result.appimage_file = dest_file
         result.desktop_file = desktop_file
+        result.icon_file = icon_file
 
         return result
 

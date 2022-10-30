@@ -113,7 +113,7 @@ class FlatpakProvider(Provider):
                 if pref_remote_data and ('url' in pref_remote_data):
                     try:
                         url = re.sub(r'\/$', '', pref_remote_data['url'])
-                        gtk_image_from_url(f'{url}/appstream/x86_64/icons/64x64/{urllib.parse.quote(list_element.id, safe="")}.png', image)
+                        gtk_image_from_url(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png', image)
                     except Exception as e:
                         log(e)
 

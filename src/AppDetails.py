@@ -61,7 +61,7 @@ class AppDetails(Gtk.ScrolledWindow):
         for el in [self.icon_slot, title_col, action_buttons_row]:
             self.details_row.append(el)
 
-        #row
+        # preview row
         self.previews_row = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, 
             spacing=10, 
