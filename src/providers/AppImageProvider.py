@@ -386,3 +386,6 @@ class AppImageProvider(Provider):
 
     def get_previews(self, el):
         return []
+
+    def load_action_buttons(self, el: AppListElement):
+        return []

@@ -91,3 +91,7 @@ class Provider(ABC):
     @abstractmethod
     def get_previews(self, el: AppListElement) -> List[Gtk.Widget]:
         pass
+
+    @abstractmethod
+    def load_action_buttons(self, el: AppListElement) -> List[tuple[Gtk.Button, Callable[[Gtk.Button], None]]]:
+        pass

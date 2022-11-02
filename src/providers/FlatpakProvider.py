@@ -12,7 +12,7 @@ from typing import TypedDict
 from xdg import DesktopEntry
 
 from ..lib import flatpak, terminal
-from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
@@ -437,8 +437,7 @@ class FlatpakProvider(Provider):
         threading.Thread(target=update_task, daemon=True, args=(callback, )).start()
 
     def can_install_file(self, file: Gio.File):
-        path: str = file.get_path()
-        return path.endswith('flatpakref')
+        return get_giofile_content_type(file) == 'application/vnd.flatpak.ref'
 
     def install_file(self, file, callback):
         def install_ref(path):
@@ -461,8 +460,9 @@ class FlatpakProvider(Provider):
             keyval = line.split('=', maxsplit=1)
             props[ keyval[0].lower() ] = keyval[1]
 
-        # @todo
-        installed_status = InstalledStatus.INSTALLED if flatpak.is_installed(props['name']) else InstalledStatus.NOT_INSTALLED
+        installed_status = InstalledStatus.NOT_INSTALLED
+        if flatpak.is_installed(props['name']):
+            installed_status = InstalledStatus.INSTALLED 
         
         name = props['name']
         desc = props['title']
@@ -603,3 +603,47 @@ class FlatpakProvider(Provider):
                 return output
 
         return []
+
+    def load_action_buttons(self, el: AppListElement):
+        button = Gtk.Button(valign=Gtk.Align.CENTER)
+
+        if el.installed_status == InstalledStatus.INSTALLED:
+            button.set_label('Uninstall')
+
+            def callback():
+                el.set_installed_status(InstalledStatus.UNINSTALLING)
+
+                self.uninstall(el, self.update_status_callback)
+
+            return [
+                (Gtk.Button(label='Uninstall', valign=Gtk.Align.CENTER, css_classes=['destructive-action']), callback),
+                (Gtk.Button(label='Open', valign=Gtk.Align.CENTER), lambda _: self.run(el))
+            ] 
+
+        elif el.installed_status == InstalledStatus.UNINSTALLING:
+            pass
+
+        # elif self.app_list_element.installed_status == InstalledStatus.NOT_INSTALLED:
+        #     self.app_list_element.set_installed_status(InstalledStatus.INSTALLING)
+        #     self.update_installation_status()
+
+        #     if self.local_file:
+        #         self.provider.install_file(
+        #             self.active_alt_source or self.app_list_element,
+        #             self.update_status_callback
+        #         )
+        #     else:
+        #         self.provider.install(
+        #             self.active_alt_source or self.app_list_element,
+        #             self.update_status_callback
+        #         )
+
+        # elif self.app_list_element.installed_status == InstalledStatus.UPDATE_AVAILABLE:
+        #     self.provider.uninstall(
+        #         self.app_list_element, 
+        #         self.update_status_callback
+        #     )
+
+        return [
+            (button, callback)
+        ]

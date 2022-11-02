@@ -51,14 +51,15 @@ class AppDetails(Gtk.ScrolledWindow):
         self.secondary_action_button = Gtk.Button(label='', valign=Gtk.Align.CENTER, visible=False)
 
         # Action buttons
-        action_buttons_row = CenteringBox(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
-        self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
+        self.action_buttons_row = CenteringBox(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.action_buttons_row_childern = []
+        # self.primary_action_button.connect('clicked', self.on_primary_action_button_clicked)
+        # self.secondary_action_button.connect('clicked', self.on_secondary_action_button_clicked)
 
-        for el in [self.secondary_action_button, self.primary_action_button]:
-            action_buttons_row.append(el)
+        # for el in [self.secondary_action_button, self.primary_action_button]:
+        #     action_buttons_row.append(el)
 
-        for el in [self.icon_slot, title_col, action_buttons_row]:
+        for el in [self.icon_slot, title_col, self.action_buttons_row]:
             self.details_row.append(el)
 
         # preview row
@@ -102,6 +103,14 @@ class AppDetails(Gtk.ScrolledWindow):
 
         self.load_list_element_details(el, load_icon_from_network)
         self.install_button_label_info = None
+
+        for btn in self.action_buttons_row_childern:
+            self.action_buttons_row.remove(btn)
+
+        for btn in self.provider.load_action_buttons(el):
+            self.action_buttons_row.append(btn[0])
+            self.action_buttons_row_childern.append(btn[0])
+            btn[0].connect('clicked', btn[1])
 
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
