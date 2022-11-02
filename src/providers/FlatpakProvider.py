@@ -18,7 +18,7 @@ from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List
-from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Adw
 
 class FlatpakState(TypedDict):
     installed_status: InstalledStatus
@@ -252,13 +252,10 @@ class FlatpakProvider(Provider):
         def get_remote_link(r: str, **kwargs) -> Gtk.Label:
             if (r in remotes):
                 if 'homepage' in remotes[r]:
-                    source_heading = Gtk.Label(css_classes=['heading'], halign=Gtk.Align.START, **kwargs)
-
                     remote_link = f'https://flathub.org/apps/details/{list_element.id}' if r == 'flathub' else remotes[r]['homepage']
-                    source_heading.set_markup(f"""<a href="{remote_link}">{remotes[r]['title']}</a>""")
-                    return source_heading
+                    return remote_link
                 else:
-                    return Gtk.Label( label=f"""{remotes[r]['title']}""", halign=Gtk.Align.START, **kwargs)
+                    return remotes[r]['title']
 
         if 'origin' in list_element.extra_data:
             element_remotes: List[str] = []
@@ -267,24 +264,28 @@ class FlatpakProvider(Provider):
             else:
                 element_remotes.append(list_element.extra_data['origin'])
 
-            source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
+            gtk_list = Gtk.ListBox(css_classes=['boxed-list'], margin_bottom=20)
 
-            if (list_element.installed_status == InstalledStatus.INSTALLED) and (len(element_remotes) > 1):
-                source_row.append( LabelStart(label='Installed from:', css_classes=['heading']) )
-                source_row.append( get_remote_link(list_element.extra_data['origin'], margin_bottom=20) )
+            if (list_element.installed_status == InstalledStatus.INSTALLED):
+                row = Adw.ActionRow()
+                row.set_title( 'Installed from' )
+                row.set_subtitle( get_remote_link(list_element.extra_data['origin']) )
+                gtk_list.append(row)
 
             if 'file_path' in list_element.extra_data:
-                source_row.append( LabelStart(label='File:', css_classes=['heading']) )
-                source_row.append( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
+                row = Adw.ActionRow()
+                row.set_title( LabelStart(label='File:', css_classes=['heading']) )
+                row.set_subtitle( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
+                gtk_list.append(row)
 
-            source_row.append( LabelStart(label='Available from:', css_classes=['heading']))
-            if (list_element.installed_status == InstalledStatus.INSTALLED):
+            if (list_element.installed_status != InstalledStatus.INSTALLED):
+                row = Adw.ActionRow()
+                row.set_title( 'Available from' )
                 for r in element_remotes:
-                    source_row.append( get_remote_link(r) )
-            else:
-                source_row.append( get_remote_link(list_element.extra_data['origin']) )
+                    row.set_subtitle( get_remote_link(r) )
+                gtk_list.append(row)
 
-            widget.append(source_row)
+            widget.append(gtk_list)
 
             expander = Gtk.Expander(label="Show history", child=Gtk.Spinner())
             expander.ref = self.get_ref(list_element)
@@ -522,7 +523,7 @@ class FlatpakProvider(Provider):
         for alt_source in list_elements:
             if source_id == self.create_source_id(alt_source):
                 remote_ls_items = flatpak.remote_ls(updates_only=False, cached=True, origin=alt_source.extra_data['origin'])
- 
+
                 for rc in remote_ls_items:
                     if (rc['application'] == alt_source.id) and (rc['origin'] == alt_source.extra_data['origin']):
                         alt_source.extra_data['version'] = rc['version']
