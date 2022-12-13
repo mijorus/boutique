@@ -251,6 +251,7 @@ class FlatpakProvider(Provider):
         return f'<b>{el.description}</b>\n\n{output}'.replace("&", "&amp;")
 
     def get_available_from_labels(self, list_element):
+        remotes = flatpak.remotes_list()
         element_remotes: List[str] = []
         if 'remotes' in list_element.extra_data:
             element_remotes.extend(list_element.extra_data['remotes'])
