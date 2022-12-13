@@ -9,7 +9,7 @@ from .models.Provider import Provider
 from .providers import FlatpakProvider
 from .providers.providers_list import providers
 from .lib.utils import cleanhtml, key_in_dict, set_window_cursor, get_application_window
-from .components.CustomComponents import CenteringBox
+from .components.CustomComponents import CenteringBox, LabelStart
 
 class AppDetails(Gtk.ScrolledWindow):
     """The presentation screen for an application"""
@@ -347,21 +347,30 @@ class AppDetails(Gtk.ScrolledWindow):
     def load_extra_details(self):
         gtk_list = Gtk.ListBox(css_classes=['boxed-list'], margin_bottom=20)
 
+        row = Adw.ActionRow()
+        logging.info(self.provider.icon)
+        row_img = Gtk.Image(resource=self.provider.icon)
+        row_img.set_pixel_size(34)
+        row.add_prefix( row_img )
+        row.set_title( self.provider.name.capitalize() )
+        row.set_subtitle( "Package type" )
+        gtk_list.append(row)
+
         if (self.app_list_element.installed_status == InstalledStatus.INSTALLED):
             row = Adw.ActionRow()
-            row.set_title( 'Installed from' )
+            row.set_title( 'Source' )
             row.set_subtitle( self.provider.get_installed_from_source(self.app_list_element) )
             gtk_list.append(row)
 
         if 'file_path' in self.app_list_element.extra_data:
             row = Adw.ActionRow()
-            row.set_title( LabelStart(label='File:', css_classes=['heading']) )
-            row.set_subtitle( LabelStart(label=self.app_list_element.extra_data['file_path'], margin_bottom=20) )
+            row.set_title( "File path" )
+            row.set_subtitle( self.app_list_element.extra_data['file_path'] )
             gtk_list.append(row)
 
         if (self.app_list_element.installed_status != InstalledStatus.INSTALLED):
             row = Adw.ActionRow()
-            row.set_title( 'Available from' )
+            row.set_title( 'Available from:' )
             for r in self.provider.get_available_from_labels(self.app_list_element):
                 row.set_subtitle( r )
 

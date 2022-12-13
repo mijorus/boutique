@@ -31,11 +31,9 @@ class ExtractedAppImage():
     icon_file: Optional[Gio.File]
 
 class AppImageProvider(Provider):
-    PROVIDER_NAME='appimage'
-
     def __init__(self):
-        self.name = 'AppImage'
-        self.image = Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
+        self.name = 'appimage'
+        self.icon = "/it/mijorus/boutique/assets/App-image-logo.png"
 
     def list_installed(self) -> List[AppListElement]:
         default_folder_path = self.get_appimages_default_destination_path()
@@ -60,7 +58,7 @@ class AppImageProvider(Provider):
                                 app_id=entry.getExec(),
                                 installed_status=InstalledStatus.INSTALLED,
                                 file_path=entry.getExec(),
-                                provider=self.PROVIDER_NAME,
+                                provider=self.name,
                                 desktop_entry=entry
                             ))
 
@@ -87,7 +85,7 @@ class AppImageProvider(Provider):
 
     def get_icon(self, el: AppListElement, repo: str=None, load_from_network: bool=False) -> Gtk.Image:
         icon_path = None
-
+        
         if 'tmp_icon' in el.extra_data and el.extra_data['tmp_icon']:
             icon_path = el.extra_data['tmp_icon'].get_path()
         elif 'desktop_entry' in el.extra_data:
@@ -124,21 +122,7 @@ class AppImageProvider(Provider):
         return ''
 
     def load_extra_data_in_appdetails(self, widget: Gtk.Widget, list_element: AppListElement):
-        source_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
-
-        if 'file_path' in list_element.extra_data:
-            source_row.append( LabelStart(label='File:', css_classes=['heading']) )
-            source_row.append( 
-                LabelStart(
-                    label=list_element.extra_data['file_path'], 
-                    margin_bottom=20,
-                    max_width_chars=60, 
-                    ellipsize=Pango.EllipsizeMode.MIDDLE,
-                    selectable=True,
-                ) 
-            )
-
-        widget.append(source_row)
+        pass
 
     def list_updatables(self) -> List[AppUpdateElement]:
         return []
@@ -285,7 +269,7 @@ class AppImageProvider(Provider):
             name=app_name, 
             description='', 
             app_id=hashlib.md5(open(file.get_path(), 'rb').read()).hexdigest(), 
-            provider=self.PROVIDER_NAME, 
+            provider=self.name, 
             installed_status=InstalledStatus.NOT_INSTALLED,
             file_path=file.get_path(),
             desktop_entry=desktop_entry,
@@ -391,4 +375,4 @@ class AppImageProvider(Provider):
         return []
         
     def get_installed_from_source(self, el):
-        return ''
+        return 'Local file'

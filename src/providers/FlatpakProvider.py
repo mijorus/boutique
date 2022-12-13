@@ -25,8 +25,8 @@ class FlatpakState(TypedDict):
 
 class FlatpakProvider(Provider):
     def __init__(self):
-        self.name = 'Flatpak'
-        self.icon = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
+        self.name = 'flatpak'
+        self.icon = "/it/mijorus/boutique/assets/flathub-badge-logo.svg"
 
         self.refresh_installed_status_callback: Optional[Callable] = None
         self.remote_ls_updatable_cache: Optional[List] = None
@@ -106,7 +106,7 @@ class FlatpakProvider(Provider):
             image = Gtk.Image.new_from_file(local_file_path)
             image.set_pixel_size(45)
         else:
-            image = self.icon
+            image = Gtk.Image(resource=self.icon)
             remotes = flatpak.remotes_list()
 
             if load_from_network:
@@ -265,7 +265,7 @@ class FlatpakProvider(Provider):
         return out
     
     def get_installed_from_source(self, el):
-        return self.get_remote_link(el.extra_data['origin'], el) 
+        return el.extra_data['origin'].capitalize()
     
     def get_remote_link(self, r: str, el) -> str:
         remotes = flatpak.remotes_list()
