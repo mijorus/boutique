@@ -301,50 +301,58 @@ class FlatpakProvider(Provider):
             return list_element.extra_data['ref']
 
         return f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
+        
+    def create_history_expander(self, history, expander, success: bool):
+        if (not success):
+            expander.set_label('Couldn\'t load data')
+            return
+    
+        expander.set_label('History')
+
+        list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
+        for h in history:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+            title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'], wrap=True)
+            subtitle = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True, max_width_chars=100)
+            col.append(title)
+            col.append(subtitle)
+            row.append(col)
+
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
+            install_label = qq(expander._app.installed_status == InstalledStatus.INSTALLED, 'Downgrade', 'Install')
+            install_btn = Gtk.Button(label=install_label)
+            # install_btn._app = list
+            install_btn.connect('clicked', self.show_downgrade_dialog, {'commit': h.commit, 'list_element': expander._app})
+            col.append(install_btn)
+            row.append(col)
+
+            list_box.append(row)
+
+        expander.has_history = True
+        expander.set_child(list_box)
+
+    def async_load_app_history(self, expander: Gtk.Expander):
+        success = True
+
+        try:
+            history: List[FlatpakHistoryElement] = flatpak.get_app_history(expander.ref, expander.remote)
+        except Exception as e:
+            logging.error(e)
+            success = False
+
+        GLib.idle_add(self.create_history_expander, history, expander, success)
 
     def on_history_expanded(self, expander: Gtk.Expander, state):
-        def create_log_expander(expander: Gtk.Expander):
-            expander.set_label('Loading history...')
-            if isinstance(expander.get_child(), Gtk.Spinner):
-                expander.get_child().set_spinning(True)
-
-            try:
-                history: List[FlatpakHistoryElement] = flatpak.get_app_history(expander.ref, expander.remote)
-            except Exception as e:
-                log(e)
-                expander.set_label('Couldn\'t load history data')
-                return
-
-            expander.set_label('History')
-
-            list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
-            for h in history:
-                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
-                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-                title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'], wrap=True)
-                subtitle = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True, max_width_chars=100)
-                col.append(title)
-                col.append(subtitle)
-                row.append(col)
-
-                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
-                install_label = qq(expander._app.installed_status == InstalledStatus.INSTALLED, 'Downgrade', 'Install')
-                install_btn = Gtk.Button(label=install_label)
-                # install_btn._app = list
-                install_btn.connect('clicked', self.show_downgrade_dialog, {'commit': h.commit, 'list_element': expander._app})
-                col.append(install_btn)
-                row.append(col)
-
-                list_box.append(row)
-
-            expander.has_history = True
-            expander.set_child(list_box)
-
         if expander.has_history:
             return
 
-        threading.Thread(target=create_log_expander, args=(expander, )).start()
+        expander.set_label('Loading history...')
+        if isinstance(expander.get_child(), Gtk.Spinner):
+            expander.get_child().set_spinning(True)
+
+        threading.Thread(target=self.async_load_app_history, args=(expander, )).start()
 
     def list_updatables(self) -> List[AppUpdateElement]:
         if not self.do_updates_need_refresh and (self.list_updatables_cache is not None):

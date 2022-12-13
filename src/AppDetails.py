@@ -3,7 +3,7 @@ import time
 import logging
 from typing import Optional
 from .lib.utils import qq
-from gi.repository import Gtk, GObject, Adw, Gdk, Gio, Pango
+from gi.repository import Gtk, GObject, Adw, Gdk, Gio, Pango, GLib
 from .models.AppListElement import AppListElement, InstalledStatus
 from .models.Provider import Provider
 from .providers import FlatpakProvider
@@ -88,31 +88,27 @@ class AppDetails(Gtk.ScrolledWindow):
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=10, margin_bottom=20)
         self.set_child(clamp)
 
-    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False, alt_sources: list[AppListElement]= []):
-        self.app_list_element = el
-        self.active_alt_source = None
-        self.alt_sources = alt_sources
-        self.local_file = local_file
+        self.loading_thread = False
 
-        self.provider = providers[el.provider]
-        is_installed, alt_list_element_installed = self.provider.is_installed(self.app_list_element, alt_sources)
+    def async_load(self):
+        is_installed, alt_list_element_installed = self.provider.is_installed(self.app_list_element, self.alt_sources)
+
         if is_installed and alt_list_element_installed:
             self.set_app_list_element(alt_list_element_installed, True)
             return
 
-        self.load_list_element_details(el, load_icon_from_network)
+        self.load_list_element_details(self.app_list_element, self.load_icon_from_network)
         self.install_button_label_info = None
 
         self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
-        ###
         self.install_button_label_info = None
 
         self.source_selector.remove_all()
         if self.source_selector_hdlr:
             self.source_selector.disconnect(self.source_selector_hdlr)
 
-        if alt_sources:
+        if self.alt_sources:
             self.source_selector_revealer.set_reveal_child(True)
             active_source_id = None
             for i, alt_source in enumerate([self.app_list_element, *alt_sources]):
@@ -125,15 +121,23 @@ class AppDetails(Gtk.ScrolledWindow):
         else:
             self.source_selector_revealer.set_reveal_child(False)
 
-        ###
-
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
         self.update_installation_status(check_installed=True)
         self.provider.set_refresh_installed_status_callback(self.provider_refresh_installed_status)
 
+    def set_app_list_element(self, el: AppListElement, load_icon_from_network=False, local_file=False, alt_sources: list[AppListElement]= []):
+        self.app_list_element = el
+        self.active_alt_source = None
+        self.alt_sources = alt_sources
+        self.local_file = local_file
+        self.provider = providers[el.provider]
+        self.load_icon_from_network = load_icon_from_network
+
+        GLib.idle_add(self.async_load)
+
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
-        icon = self.provider.get_icon(el, load_from_network=load_icon_from_network)
-        
+        icon = self.provider.get_icon(el, load_from_network=self.load_icon_from_network)
+
         self.details_row.remove(self.icon_slot)
         self.icon_slot = icon
         icon.set_pixel_size(128)
@@ -144,15 +148,15 @@ class AppDetails(Gtk.ScrolledWindow):
         version_label = key_in_dict(el.extra_data, 'version')
         self.version.set_markup( '' if not version_label else f'<small>{version_label}</small>' )
         self.app_id.set_markup( f'<small>{self.app_list_element.id}</small>' )
-        
         self.description.set_label('')
-        threading.Thread(target=self.load_description).start()
 
         # threading.Thread(target=self.load_previews).start()load_previews
 
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
+
+        threading.Thread(target=self.load_description).start()
 
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
@@ -269,10 +273,13 @@ class AppDetails(Gtk.ScrolledWindow):
     def load_description(self):
         self.show_row_spinner(True)
 
-        desc = self.provider.get_long_description(self.app_list_element) 
-        self.show_row_spinner(False)
-        
+        try:
+            desc = self.provider.get_long_description(self.app_list_element) 
+        except Exception as e:
+            logging.error(e)
+            desc = ''
 
+        self.show_row_spinner(False)
         self.description.set_markup(desc)
 
     def on_source_selector_changed(self, widget):
