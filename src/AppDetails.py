@@ -92,15 +92,18 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def async_load(self):
         is_installed, alt_list_element_installed = self.provider.is_installed(self.app_list_element, self.alt_sources)
+        
+        GLib.idle_add(self.load, is_installed, alt_list_element_installed)
 
-        if is_installed and alt_list_element_installed:
-            self.set_app_list_element(alt_list_element_installed, True)
-            return
+    def load(self, is_installed: bool, alt_list_element_installed):
+        # if is_installed and alt_list_element_installed:
+        #     self.set_app_list_element(alt_list_element_installed, True)
+        #     return
 
         self.load_list_element_details(self.app_list_element, self.load_icon_from_network)
         self.install_button_label_info = None
 
-        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
+        GLib.idle_add(self.provider.load_extra_data_in_appdetails, self.extra_data, self.app_list_element)
 
         self.install_button_label_info = None
 
@@ -108,18 +111,18 @@ class AppDetails(Gtk.ScrolledWindow):
         if self.source_selector_hdlr:
             self.source_selector.disconnect(self.source_selector_hdlr)
 
-        if self.alt_sources:
-            self.source_selector_revealer.set_reveal_child(True)
-            active_source_id = None
-            for i, alt_source in enumerate([self.app_list_element, *alt_sources]):
-                source_id, source_title = self.provider.get_source_details(alt_source)
-                self.source_selector.append(source_id, f'Install from: {source_title}')
-                if i == 0: active_source_id = source_id
+        # if self.alt_sources:
+        #     self.source_selector_revealer.set_reveal_child(True)
+        #     active_source_id = None
+        #     for i, alt_source in enumerate([self.app_list_element, *alt_sources]):
+        #         source_id, source_title = self.provider.get_source_details(alt_source)
+        #         self.source_selector.append(source_id, f'Install from: {source_title}')
+        #         if i == 0: active_source_id = source_id
 
-            self.source_selector.set_active_id( active_source_id )
-            get_application_window().titlebar.set_title_widget(self.source_selector_revealer)
-        else:
-            self.source_selector_revealer.set_reveal_child(False)
+        #     self.source_selector.set_active_id( active_source_id )
+        #     get_application_window().titlebar.set_title_widget(self.source_selector_revealer)
+        # else:
+        #     self.source_selector_revealer.set_reveal_child(False)
 
         self.source_selector_hdlr = self.source_selector.connect('changed', self.on_source_selector_changed)
         self.update_installation_status(check_installed=True)
@@ -133,7 +136,7 @@ class AppDetails(Gtk.ScrolledWindow):
         self.provider = providers[el.provider]
         self.load_icon_from_network = load_icon_from_network
 
-        GLib.idle_add(self.async_load)
+        threading.Thread(target=self.async_load).start()
 
     def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=self.load_icon_from_network)
@@ -150,13 +153,14 @@ class AppDetails(Gtk.ScrolledWindow):
         self.app_id.set_markup( f'<small>{self.app_list_element.id}</small>' )
         self.description.set_label('')
 
-        # threading.Thread(target=self.load_previews).start()load_previews
+        # threading.Thread(target=self.load_previews).start() // load_previews
 
         self.third_row.remove(self.extra_data)
         self.extra_data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.third_row.append(self.extra_data)
 
-        threading.Thread(target=self.load_description).start()
+        self.show_row_spinner(True)
+        threading.Thread(target=self.async_load_description).start()
 
     def set_from_local_file(self, file: Gio.File):
         for p, provider in providers.items():
@@ -270,15 +274,16 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_label('Error')
             self.primary_action_button.set_css_classes(['destructive-action'])
 
-    def load_description(self):
-        self.show_row_spinner(True)
-
+    def async_load_description(self):
         try:
             desc = self.provider.get_long_description(self.app_list_element) 
         except Exception as e:
             logging.error(e)
             desc = ''
+        
+        GLib.idle_add(self.set_description, desc)
 
+    def set_description(self, desc):
         self.show_row_spinner(False)
         self.description.set_markup(desc)
 
