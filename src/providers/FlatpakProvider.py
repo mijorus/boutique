@@ -27,6 +27,7 @@ class FlatpakProvider(Provider):
     def __init__(self):
         self.name = 'flatpak'
         self.icon = "/it/mijorus/boutique/assets/flathub-badge-logo.svg"
+        self.small_icon = "/it/mijorus/boutique/assets/Flatpak-Logo-showcase.png"
 
         self.refresh_installed_status_callback: Optional[Callable] = None
         self.remote_ls_updatable_cache: Optional[List] = None

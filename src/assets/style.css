@@ -8,3 +8,13 @@
     margin-left: 5px;
     margin-right: 5px;
 }
+
+.provider-icon {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-radius: 40px;
+}

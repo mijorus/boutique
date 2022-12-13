@@ -93,7 +93,7 @@ class InstalledAppsList(Gtk.ScrolledWindow):
             installed: List[AppListElement] = provider.list_installed()
 
             for i in installed:
-                list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)                
+                list_row = AppListBoxItem(i, activatable=True, selectable=True, hexpand=True)
                 list_row.set_update_version(key_in_dict(i.extra_data, 'version'))
 
                 list_row.load_icon(from_network=False)

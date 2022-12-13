@@ -9,6 +9,7 @@ class Provider(ABC):
     # refresh_installed_status_callback: Callable
     name: str = NotImplemented
     icon: str = NotImplemented
+    smail_icon: str = NotImplemented
 
     @abstractmethod
     def list_installed(self) -> List[AppListElement]:
