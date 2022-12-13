@@ -25,6 +25,9 @@ class FlatpakState(TypedDict):
 
 class FlatpakProvider(Provider):
     def __init__(self):
+        self.name = 'Flatpak'
+        self.icon = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
+
         self.refresh_installed_status_callback: Optional[Callable] = None
         self.remote_ls_updatable_cache: Optional[List] = None
         self.list_updatables_cache: Optional[str] = None
@@ -103,7 +106,7 @@ class FlatpakProvider(Provider):
             image = Gtk.Image.new_from_file(local_file_path)
             image.set_pixel_size(45)
         else:
-            image = Gtk.Image(resource="/it/mijorus/boutique/assets/flathub-badge-logo.svg")
+            image = self.icon
             remotes = flatpak.remotes_list()
 
             if load_from_network:
@@ -246,54 +249,45 @@ class FlatpakProvider(Provider):
 
         return f'<b>{el.description}</b>\n\n{output}'.replace("&", "&amp;")
 
-    def load_extra_data_in_appdetails(self, widget, list_element: AppListElement):
+    def get_available_from_labels(self, list_element):
+        element_remotes: List[str] = []
+        if 'remotes' in list_element.extra_data:
+            element_remotes.extend(list_element.extra_data['remotes'])
+        else:
+            element_remotes.append(list_element.extra_data['origin'])
+
+        out = []
+    
+        for r in element_remotes:
+            if (r in remotes):
+                out.append(self.get_remote_link(r, list_element))
+
+        return out
+    
+    def get_installed_from_source(self, el):
+        return self.get_remote_link(el.extra_data['origin'], el) 
+    
+    def get_remote_link(self, r: str, el) -> str:
         remotes = flatpak.remotes_list()
 
-        def get_remote_link(r: str, **kwargs) -> Gtk.Label:
-            if (r in remotes):
-                if 'homepage' in remotes[r]:
-                    remote_link = f'https://flathub.org/apps/details/{list_element.id}' if r == 'flathub' else remotes[r]['homepage']
-                    return remote_link
-                else:
-                    return remotes[r]['title']
-
-        if 'origin' in list_element.extra_data:
-            element_remotes: List[str] = []
-            if 'remotes' in list_element.extra_data:
-                element_remotes.extend(list_element.extra_data['remotes'])
+        if (r in remotes):
+            if 'homepage' in remotes[r]:
+                remote_link = f'https://flathub.org/apps/details/{el.id}' if r == 'flathub' else remotes[r]['homepage']
+                return remote_link
             else:
-                element_remotes.append(list_element.extra_data['origin'])
+                return remotes[r]['title']
+                
+        return ''
 
-            gtk_list = Gtk.ListBox(css_classes=['boxed-list'], margin_bottom=20)
-
-            if (list_element.installed_status == InstalledStatus.INSTALLED):
-                row = Adw.ActionRow()
-                row.set_title( 'Installed from' )
-                row.set_subtitle( get_remote_link(list_element.extra_data['origin']) )
-                gtk_list.append(row)
-
-            if 'file_path' in list_element.extra_data:
-                row = Adw.ActionRow()
-                row.set_title( LabelStart(label='File:', css_classes=['heading']) )
-                row.set_subtitle( LabelStart(label=list_element.extra_data['file_path'], margin_bottom=20) )
-                gtk_list.append(row)
-
-            if (list_element.installed_status != InstalledStatus.INSTALLED):
-                row = Adw.ActionRow()
-                row.set_title( 'Available from' )
-                for r in element_remotes:
-                    row.set_subtitle( get_remote_link(r) )
-                gtk_list.append(row)
-
-            widget.append(gtk_list)
-
+    def load_extra_data_in_appdetails(self, widget, list_element: AppListElement):
+        if 'origin' in list_element.extra_data:
             expander = Gtk.Expander(label="Show history", child=Gtk.Spinner())
             expander.ref = self.get_ref(list_element)
             expander._app = list_element
             expander.remote = list_element.extra_data['origin']
             expander.has_history = False
             expander.connect('notify::expanded', self.on_history_expanded)
-            
+
             widget.append(expander)
 
     def get_ref(self, list_element: AppListElement):

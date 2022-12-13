@@ -7,6 +7,8 @@ from gi.repository import Gtk, Gio
 
 class Provider(ABC):
     # refresh_installed_status_callback: Callable
+    name: str = NotImplemented
+    icon: Gtk.Image = NotImplemented
 
     @abstractmethod
     def list_installed(self) -> List[AppListElement]:
@@ -90,4 +92,13 @@ class Provider(ABC):
 
     @abstractmethod
     def get_previews(self, el: AppListElement) -> List[Gtk.Widget]:
+        pass
+
+    ## extra details
+    @abstractmethod
+    def get_installed_from_source(self, el: AppListElement) -> str:
+        pass
+
+    @abstractmethod
+    def get_available_from_labels(self, el: AppListElement) -> list:
         pass

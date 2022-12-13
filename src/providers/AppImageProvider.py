@@ -34,8 +34,8 @@ class AppImageProvider(Provider):
     PROVIDER_NAME='appimage'
 
     def __init__(self):
-        # refresh_installed_status_callback: Callable
-        pass
+        self.name = 'AppImage'
+        self.image = Gtk.Image(resource="/it/mijorus/boutique/assets/App-image-logo-bw.svg")
 
     def list_installed(self) -> List[AppListElement]:
         default_folder_path = self.get_appimages_default_destination_path()
@@ -386,3 +386,9 @@ class AppImageProvider(Provider):
 
     def get_previews(self, el):
         return []
+
+    def get_available_from_labels(self, el):
+        return []
+        
+    def get_installed_from_source(self, el):
+        return ''

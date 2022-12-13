@@ -92,7 +92,6 @@ class AppDetails(Gtk.ScrolledWindow):
 
     def async_load(self):
         is_installed, alt_list_element_installed = self.provider.is_installed(self.app_list_element, self.alt_sources)
-        
         GLib.idle_add(self.load, is_installed, alt_list_element_installed)
 
     def load(self, is_installed: bool, alt_list_element_installed):
@@ -100,10 +99,11 @@ class AppDetails(Gtk.ScrolledWindow):
         #     self.set_app_list_element(alt_list_element_installed, True)
         #     return
 
-        self.load_list_element_details(self.app_list_element, self.load_icon_from_network)
+        self.load_list_element_interface(self.app_list_element, self.load_icon_from_network)
         self.install_button_label_info = None
 
-        GLib.idle_add(self.provider.load_extra_data_in_appdetails, self.extra_data, self.app_list_element)
+        self.load_extra_details()
+        self.provider.load_extra_data_in_appdetails(self.extra_data, self.app_list_element)
 
         self.install_button_label_info = None
 
@@ -138,7 +138,8 @@ class AppDetails(Gtk.ScrolledWindow):
 
         threading.Thread(target=self.async_load).start()
 
-    def load_list_element_details(self, el: AppListElement, load_icon_from_network=False):
+    # Load the interface when we have enough data to do so
+    def load_list_element_interface(self, el: AppListElement, load_icon_from_network=False):
         icon = self.provider.get_icon(el, load_from_network=self.load_icon_from_network)
 
         self.details_row.remove(self.icon_slot)
@@ -274,6 +275,7 @@ class AppDetails(Gtk.ScrolledWindow):
             self.primary_action_button.set_label('Error')
             self.primary_action_button.set_css_classes(['destructive-action'])
 
+    # Loads the description text from external sources, like an HTTP request
     def async_load_description(self):
         try:
             desc = self.provider.get_long_description(self.app_list_element) 
@@ -312,6 +314,7 @@ class AppDetails(Gtk.ScrolledWindow):
         if final: 
             self.emit('refresh-updatable')
 
+    # Load the preview images
     def load_previews(self):
         self.show_row_spinner(True)
 
@@ -339,6 +342,32 @@ class AppDetails(Gtk.ScrolledWindow):
         carousel_row_revealer.set_reveal_child(True)
 
         self.show_row_spinner(False)
+
+    # Load the boxed list with additional information
+    def load_extra_details(self):
+        gtk_list = Gtk.ListBox(css_classes=['boxed-list'], margin_bottom=20)
+
+        if (self.app_list_element.installed_status == InstalledStatus.INSTALLED):
+            row = Adw.ActionRow()
+            row.set_title( 'Installed from' )
+            row.set_subtitle( self.provider.get_installed_from_source(self.app_list_element) )
+            gtk_list.append(row)
+
+        if 'file_path' in self.app_list_element.extra_data:
+            row = Adw.ActionRow()
+            row.set_title( LabelStart(label='File:', css_classes=['heading']) )
+            row.set_subtitle( LabelStart(label=self.app_list_element.extra_data['file_path'], margin_bottom=20) )
+            gtk_list.append(row)
+
+        if (self.app_list_element.installed_status != InstalledStatus.INSTALLED):
+            row = Adw.ActionRow()
+            row.set_title( 'Available from' )
+            for r in self.provider.get_available_from_labels(self.app_list_element):
+                row.set_subtitle( r )
+
+            gtk_list.append(row)
+
+        self.extra_data.append(gtk_list)
 
     def show_row_spinner(self, status: bool):
         self.desc_row_spinner.set_visible(status)

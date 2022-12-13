@@ -60,4 +60,5 @@ class AppListBoxItem(Gtk.ListBoxRow):
         self.update_version.set_label(text if text else '')
 
     def __del__(self):
-        self.image_container.get_first_child().clear()
+        # self.image_container.get_first_child().clear()
+        pass
