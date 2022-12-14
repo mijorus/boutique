@@ -30,12 +30,19 @@ from .providers.providers_list import providers
 from .lib.utils import log
 from .lib.terminal import sh
 
-logging.basicConfig(
-    filename=GLib.get_user_cache_dir() + '/boutique.log',
-    filemode='a',
-    level=logging.DEBUG
-)
+log_file = GLib.get_user_cache_dir() + '/boutique.log'
+print('Logging to file ' + log_file)
 
+with open(log_file, 'w+') as f:
+    f.write('')
+
+logging.basicConfig(
+    filename=log_file,
+    filemode='a',
+    encoding='utf-8',
+    level=logging.DEBUG,
+    force=True
+)
 
 class BoutiqueApplication(Adw.Application):
     """The main application singleton class."""
