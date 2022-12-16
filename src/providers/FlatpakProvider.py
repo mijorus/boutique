@@ -308,25 +308,29 @@ class FlatpakProvider(Provider):
         expander.set_label('History')
 
         list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
-        for h in history:
-            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
-            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        
+        if history:
+            for h in history:
+                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
+                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-            title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'], wrap=True)
-            subtitle = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True, max_width_chars=100)
-            col.append(title)
-            col.append(subtitle)
-            row.append(col)
+                title = Gtk.Label(label=h.date.split('+')[0], halign=Gtk.Align.START, css_classes=['heading'], wrap=True)
+                subtitle = Gtk.Label(label=h.subject, halign=Gtk.Align.START, css_classes=['dim-label', 'caption'], selectable=True, wrap=True, max_width_chars=100)
+                col.append(title)
+                col.append(subtitle)
+                row.append(col)
 
-            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
-            install_label = qq(expander._app.installed_status == InstalledStatus.INSTALLED, 'Downgrade', 'Install')
-            install_btn = Gtk.Button(label=install_label)
-            # install_btn._app = list
-            install_btn.connect('clicked', self.show_downgrade_dialog, {'commit': h.commit, 'list_element': expander._app})
-            col.append(install_btn)
-            row.append(col)
+                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, vexpand=True, hexpand=True, halign=Gtk.Align.END)
+                install_label = qq(expander._app.installed_status == InstalledStatus.INSTALLED, 'Downgrade', 'Install')
+                install_btn = Gtk.Button(label=install_label)
+                install_btn.connect('clicked', self.show_downgrade_dialog, {'commit': h.commit, 'list_element': expander._app})
+                col.append(install_btn)
+                row.append(col)
 
-            list_box.append(row)
+                list_box.append(row)
+                
+        else:
+            list_box.append(Adw.ActionRow(title='No previous versions were found'))
 
         expander.has_history = True
         expander.set_child(list_box)
