@@ -17,6 +17,7 @@
 
 from .InstalledAppsList import InstalledAppsList
 from .BrowseApps import BrowseApps
+from .UpdatesList import UpdatesList
 from .AppDetails import AppDetails
 from .models.AppListElement import AppListElement
 from .lib import flatpak, utils
@@ -65,8 +66,13 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
         self.browse_stack.add_child(self.browse_apps)
         
+        self.updates_stack = Gtk.Stack()
+        self.updates_list = UpdatesList()
+        self.updates_stack.add_child(self.updates_list)
+        
         # Add content to the main_stack
         utils.add_page_to_adw_stack(self.app_lists_stack, self.installed_stack, 'installed', 'Installed', 'computer-symbolic' )
+        utils.add_page_to_adw_stack(self.app_lists_stack, self.updates_stack, 'updates', 'Updates' , 'software-update-available-symbolic')
         utils.add_page_to_adw_stack(self.app_lists_stack, self.browse_stack, 'browse', 'Browse' , 'globe-symbolic')
 
         self.container_stack.add_child(self.app_lists_stack)
@@ -140,7 +146,8 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
                 self.on_show_browsed_list()
 
     def on_app_lists_stack_change(self, widget, _):
-        pass
+        if self.app_lists_stack.get_visible_child() == self.updates_stack:
+            self.updates_list.refresh_upgradable()
 
     def on_container_stack_change(self, widget, _):
         in_app_details = self.container_stack.get_visible_child() == self.app_details

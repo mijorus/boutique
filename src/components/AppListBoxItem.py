@@ -1,5 +1,5 @@
 from urllib import request
-from gi.repository import Gtk, Adw, Gdk, GObject, Pango
+from gi.repository import Gtk, Adw, Gdk, GObject, Pango, GLib
 from typing import Dict, List, Optional
 from ..lib.utils import cleanhtml
 import re

@@ -328,7 +328,7 @@ class FlatpakProvider(Provider):
                 row.append(col)
 
                 list_box.append(row)
-                
+
         else:
             list_box.append(Adw.ActionRow(title='No previous versions were found'))
 
