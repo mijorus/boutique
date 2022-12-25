@@ -22,3 +22,9 @@ class SearchResultsItems():
     def __init__(self, app_id: str, list_elements: list[AppListElement]):
         self.id: str = app_id
         self.list_elements: list[AppListElement] = list_elements
+
+class ProviderMessage():
+    def __init__(self, message: str, severity: str):
+        """ severity can be: info, warn, danger """
+        self.message = message
+        self.severity = severity

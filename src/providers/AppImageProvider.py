@@ -37,6 +37,9 @@ class AppImageProvider(Provider):
         self.small_icon = "/it/mijorus/boutique/assets/appimage-showcase.png"
         logging.info(f'Activating {self.name} provider')
 
+        self.general_messages = []
+        self.update_messages = []
+
     def list_installed(self) -> List[AppListElement]:
         default_folder_path = self.get_appimages_default_destination_path()
         output = []

@@ -23,6 +23,9 @@ class UpdatesList(Gtk.ScrolledWindow):
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.no_apps_found_row = NoAppsFoundRow(visible=False)
 
+        messages_row = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
+        messages_row.append(Adw.ActionRow(title='Messages', subtitle='reported'))
+
         # updates row
         self.updates_fetched = False
         self.updates_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, visible=True)
@@ -45,29 +48,13 @@ class UpdatesList(Gtk.ScrolledWindow):
         self.updates_row.append(updates_title_row)
         self.updates_row.append(self.updates_row_list)
 
+        self.main_box.append(messages_row)
         self.main_box.append(self.updates_row)
 
         clamp = Adw.Clamp(child=self.main_box, maximum_size=600, margin_top=20, margin_bottom=20)
         self.set_child(clamp)
 
-    # Runs the background task to check for app updates
-    def async_load_upgradable(self, only_provider: Optional[str]=None):
-        updatable_elements = []
-
-        
-        for p, provider in providers.items():
-            apps = provider.list_installed()
-
-            for upg in provider.list_updatables():
-                for a in apps:
-                    if (a.id == upg.id):
-                        upg.extra_data['app_list_element'] = a
-                        updatable_elements.append(upg)
-                        break
-
-        GLib.idle_add(self.render_updatables, updatable_elements)
-
-    def refresh_upgradable(self, only_provider: Optional[str]=None):
+    def on_show(self, only_provider: Optional[str]=None):
         if self.busy:
             return
     
@@ -81,6 +68,28 @@ class UpdatesList(Gtk.ScrolledWindow):
         self.updates_row_list.set_css_classes(["boxed-list"])
     
         threading.Thread(target=self.async_load_upgradable, daemon=True).start()
+
+    # Runs the background task to check for app updates
+    def async_load_upgradable(self, only_provider: Optional[str]=None):
+        updatable_elements = []
+
+        
+        for p, provider in providers.items():
+            apps = provider.list_installed()
+
+            for upg in provider.list_updatables():
+                for a in apps:
+                    if (a.id == upg.id):
+                        upg.extra_data['app_list_element'] = a
+                        
+                        if a.extra_data and ('version' in a.extra_data) and  a.extra_data['version'] != upg.to_version:
+                            upg.to_version = a.extra_data['version'] + ' > ' + upg.to_version
+
+                        updatable_elements.append(upg)
+                        log(upg.to_version)
+                        break
+
+        GLib.idle_add(self.render_updatables, updatable_elements)
 
     def render_updatables(self, updatable_elements: List[AppUpdateElement]):
         upgradable_count = 0
@@ -100,7 +109,7 @@ class UpdatesList(Gtk.ScrolledWindow):
         self.updates_fetched = True
         self.updates_row_list_spinner.set_visible(False)
         
-        if upgradable_count:
+        if updatable_elements:
             self.update_all_btn.set_visible(True)
             self.updates_title_label.set_label('Available updates')
         else:

@@ -147,7 +147,7 @@ class BoutiqueWindow(Gtk.ApplicationWindow):
 
     def on_app_lists_stack_change(self, widget, _):
         if self.app_lists_stack.get_visible_child() == self.updates_stack:
-            self.updates_list.refresh_upgradable()
+            self.updates_list.on_show()
 
     def on_container_stack_change(self, widget, _):
         in_app_details = self.container_stack.get_visible_child() == self.app_details

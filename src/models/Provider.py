@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Callable, Dict, Tuple, Optional
 from .AppListElement import AppListElement
-from .Models import AppUpdateElement
+from .Models import AppUpdateElement, ProviderMessage
 from .AppListElement import InstalledStatus
 from gi.repository import Gtk, Gio
 
@@ -10,6 +10,8 @@ class Provider(ABC):
     name: str = NotImplemented
     icon: str = NotImplemented
     smail_icon: str = NotImplemented
+    general_messages: List[ProviderMessage] = NotImplemented
+    update_messages: List[ProviderMessage] = NotImplemented
 
     @abstractmethod
     def list_installed(self) -> List[AppListElement]:

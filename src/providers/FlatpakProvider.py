@@ -14,6 +14,7 @@ from xdg import DesktopEntry
 from ..lib import flatpak, terminal
 from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
 from ..models.AppListElement import AppListElement, InstalledStatus
+from ..models.Models import ProviderMessage
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
@@ -47,6 +48,9 @@ class FlatpakProvider(Provider):
 
         self.flatpaks_state: dict[str, FlatpakState] = {}
         self.list_installed_list: List[AppListElement] = []
+
+        self.general_messages = []
+        self.update_messages = []
 
     def is_installed(self, list_element: AppListElement, alt_sources: list[AppListElement]=[]):
         ref = self.get_ref(list_element)
@@ -357,24 +361,39 @@ class FlatpakProvider(Provider):
         threading.Thread(target=self.async_load_app_history, args=(expander, )).start()
 
     def list_updatables(self) -> List[AppUpdateElement]:
-        if not self.do_updates_need_refresh and (self.list_updatables_cache is not None):
-            update_output = self.list_updatables_cache
-        else:
-            self.update_remote_ls_updatable_cache()
-            update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
-            self.list_updatables_cache = update_output
+        # if not self.do_updates_need_refresh and (self.list_updatables_cache is not None):
+        #     update_output = self.list_updatables_cache
+        # else:
+        #     self.update_remote_ls_updatable_cache()
+        #     update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
+        #     self.list_updatables_cache = update_output
         
-        if not '1.\t' in update_output:
-            self.refresh_update_section_cache(None)
+        latest_remote_upstream = []
+        if self.list_updatables_cache == None:
+            try:
+                terminal.sh(['flatpak', 'update', '--appstream'])
+                latest_remote_upstream = flatpak.remote_ls(updates_only=True, origin='flathub')
+            except Exception as e:
+                logging.error(e)
+                self.update_messages.append(ProviderMessage('There was an error', 'warn'))
+
+            self.list_updatables_cache = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
+
+        if (not self.list_updatables_cache) or (not '1.\t' in self.list_updatables_cache):
             return []
 
-        self.refresh_update_section_cache(update_output)
+        update_table_section = ''
+        update_sections = self.list_updatables_cache.split('1.\t', maxsplit=1)
+
+        if len(update_sections) > 1:
+            update_table_section = '1.\t' + update_sections[1]
+            update_table_section = update_table_section
 
         start_pattern = re.compile(r'^([0-9]+\.)')
         output = []
 
-        if self.update_section_cache:
-            for row in self.update_section_cache.split('\n'):
+        if update_table_section:
+            for row in update_table_section.split('\n'):
                 row = row.strip()
                 if not re.match(start_pattern, row):
                     break
@@ -390,12 +409,12 @@ class FlatpakProvider(Provider):
                     app_update_element = AppUpdateElement(cols[0], update_size, None)
                     output.append( app_update_element )
 
-                    for rc in self.remote_ls_updatable_cache:
+                    for rc in latest_remote_upstream:
                         if rc['application'] == app_update_element.id:
                             app_update_element.to_version = rc['version']
                             break
         
-        self.do_updates_need_refresh = False
+        # self.do_updates_need_refresh = False
         return output
 
     def update(self, list_element: AppListElement, callback: Callable):
@@ -543,16 +562,16 @@ class FlatpakProvider(Provider):
 
         raise Exception('Missing list_element source!')
 
-    def update_remote_ls_updatable_cache(self):
-        """Updated the global remote_ls_cache varaible"""
-        if self.remote_ls_updatable_cache is None:
-            self.remote_ls_updatable_cache = []
-            terminal.sh(['flatpak', 'update', '--appstream'], return_stderr=False)
+    # Updated the global remote_ls_cache varaible
+    # def update_remote_ls_updatable_cache(self):
+    #     if self.remote_ls_updatable_cache is None:
+    #         self.remote_ls_updatable_cache = []
+    #         terminal.sh(['flatpak', 'update', '--appstream'], return_stderr=False)
 
-            try:
-                self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
-            except Exception as e:
-                self.remote_ls_updatable_cache = []
+    #         try:
+                # self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
+    #         except Exception as e:
+    #             self.remote_ls_updatable_cache = []
 
     def is_updatable(self, app_id: str) -> bool:
         if self.update_section_cache == None:
