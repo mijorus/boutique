@@ -82,6 +82,10 @@ class Provider(ABC):
         pass
 
     @abstractmethod
+    def open_file_dialog(self, file: Gio.File):
+        pass
+
+    @abstractmethod
     def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
         pass
 

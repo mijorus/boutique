@@ -259,26 +259,6 @@ class AppImageProvider(Provider):
         # app_name = re.sub(r'\.x86_64$', '', app_name, flags=re.IGNORECASE)
         desktop_entry = None
 
-        modal_text = f"<b>You are trying to open the following AppImage: </b>\n\n📦️ <em>{app_name}</em>"
-        modal_text += '\n\nAppImages are self-contained applications that can be executed without requiring installation,\njust like .app file on MacOS or portable apps on Windows.'
-        modal_text += '\n\nYou can decide to execute this app immediately or create a desktop shortcut for faster access.'
-
-        # extra_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        modal_text_label = Gtk.Label()
-        modal_text_label.set_markup(modal_text)
-        
-        self.run_options_dialog = Adw.MessageDialog(
-            heading='Opening sideloaded AppImage',
-            body='',
-            extra_child=modal_text_label
-        )
-        
-        self.run_options_dialog.add_response('cancel', 'cancel')
-        self.run_options_dialog.add_response('run', 'Run')
-
-        self.run_options_dialog.connect('response', self.on_run_option_selected)
-        self.run_options_dialog.show()
-
         if get_giofile_content_type(file) == 'application/vnd.appimage':
             try:
                 extracted = self.extract_appimage(file.get_path())
@@ -300,9 +280,40 @@ class AppImageProvider(Provider):
             desktop_entry=desktop_entry,
             tmp_icon=extracted.icon_file
         )
+
+    def open_file_dialog(self, file: Gio.File, parent: Gtk.Widget):
+        app_name: str = file.get_parse_name().split('/')[-1]
+        modal_text = f"<b>You are trying to open the following AppImage: </b>\n\n📦️ {app_name}"
+        modal_text += '\n\nAppImages are self-contained applications that\ncan be executed without requiring installation'
+        modal_text += '\n\nYou can decide to execute this app immediately\nor create a desktop shortcut for faster access.\n'
+
+        extra_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        modal_text_label = Gtk.Label()
+        modal_text_label.set_markup(modal_text)
+        extra_content.append(modal_text_label)
+
+        extra_content.append(Gtk.CheckButton(label='Create a desktop shortcut'))
         
-    def on_run_option_selected(self):
-        pass
+        self.open_file_options_dialog = Adw.MessageDialog(
+            heading='Opening sideloaded AppImage',
+            body='',
+            extra_child=extra_content
+        )
+        
+        self.open_file_options_dialog.add_response('cancel', 'Cancel')
+        self.open_file_options_dialog.add_response('run', 'Run')
+        self.open_file_options_dialog.set_response_appearance('cancel', Adw.ResponseAppearance.DESTRUCTIVE)
+        self.open_file_options_dialog.set_response_appearance('run', Adw.ResponseAppearance.SUGGESTED)
+
+        self.open_file_options_dialog.connect('response', self.on_run_option_selected)
+        self.open_file_options_dialog.set_transient_for(parent)
+        return self.open_file_options_dialog
+
+    def on_run_option_selected(self, response: str, user_data: str):
+        if response == 'run':
+            logging.info('Running appimage')
+        elif response == 'cancel':
+            self.open_file_options_dialog.close()
 
     def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
         pass

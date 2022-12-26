@@ -562,17 +562,6 @@ class FlatpakProvider(Provider):
 
         raise Exception('Missing list_element source!')
 
-    # Updated the global remote_ls_cache varaible
-    # def update_remote_ls_updatable_cache(self):
-    #     if self.remote_ls_updatable_cache is None:
-    #         self.remote_ls_updatable_cache = []
-    #         terminal.sh(['flatpak', 'update', '--appstream'], return_stderr=False)
-
-    #         try:
-                # self.remote_ls_updatable_cache = flatpak.remote_ls(updates_only=True)
-    #         except Exception as e:
-    #             self.remote_ls_updatable_cache = []
-
     def is_updatable(self, app_id: str) -> bool:
         if self.update_section_cache == None:
             update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
@@ -633,3 +622,6 @@ class FlatpakProvider(Provider):
                 return output
 
         return []
+    
+    def open_file_dialog(self, file):
+        pass

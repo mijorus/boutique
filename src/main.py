@@ -30,20 +30,6 @@ from .providers.providers_list import providers
 from .lib.utils import log
 from .lib.terminal import sh
 
-log_file = GLib.get_user_cache_dir() + '/boutique.log'
-print('Logging to file ' + log_file)
-
-with open(log_file, 'w+') as f:
-    f.write('')
-
-logging.basicConfig(
-    filename=log_file,
-    filemode='a',
-    encoding='utf-8',
-    level=logging.DEBUG,
-    force=True
-)
-
 class BoutiqueApplication(Adw.Application):
     """The main application singleton class."""
 
@@ -78,12 +64,20 @@ class BoutiqueApplication(Adw.Application):
         self.win.present()
 
     def do_open(self, files: list[Gio.File], n_files: int, _):
-        self.do_activate()
+        if files:
+            for p, provider in providers.items():
+                if provider.can_install_file(files[0]):
+                    self.win = Adw.ApplicationWindow(application=self)
+                    self.win.present()
+                    
+                    dialog = provider.open_file_dialog(files[0], self.win)
+                    dialog.show()
+                    break
 
-        for f in files:
-            if isinstance(self.props.active_window, BoutiqueWindow):
-                self.props.active_window.on_selected_local_file(f)
-                break
+        # for f in files:
+        #     if isinstance(self.props.active_window, BoutiqueWindow):
+        #         self.props.active_window.on_selected_local_file(f)
+        #         break
 
     def on_about_action(self, widget, _):
         """Callback for the app.about action."""
@@ -136,7 +130,17 @@ class BoutiqueApplication(Adw.Application):
 
 def main(version):
     """The application's entry point."""
+    
+    log_file = GLib.get_user_cache_dir() + '/boutique.log'
+    print('Logging to file ' + log_file)
+    
     app = BoutiqueApplication()
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(
+        filename=log_file,
+        filemode='a',
+        encoding='utf-8',
+        level=logging.DEBUG,
+        force=True
+    )
 
     return app.run(sys.argv)
