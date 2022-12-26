@@ -20,7 +20,7 @@ from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List, TypedDict
-from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Pango
+from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Pango, Adw
 
 class ExtractedAppImage():
     desktop_entry: Optional[DesktopEntry.DesktopEntry]
@@ -255,9 +255,29 @@ class AppImageProvider(Provider):
 
     def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
         app_name: str = file.get_parse_name().split('/')[-1]
-        app_name = re.sub(r'\.appimage$', '', app_name, flags=re.IGNORECASE)
-        app_name = re.sub(r'\.x86_64$', '', app_name, flags=re.IGNORECASE)
+        # app_name = re.sub(r'\.appimage$', '', app_name, flags=re.IGNORECASE)
+        # app_name = re.sub(r'\.x86_64$', '', app_name, flags=re.IGNORECASE)
         desktop_entry = None
+
+        modal_text = f"<b>You are trying to open the following AppImage: </b>\n\n📦️ <em>{app_name}</em>"
+        modal_text += '\n\nAppImages are self-contained applications that can be executed without requiring installation,\njust like .app file on MacOS or portable apps on Windows.'
+        modal_text += '\n\nYou can decide to execute this app immediately or create a desktop shortcut for faster access.'
+
+        # extra_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        modal_text_label = Gtk.Label()
+        modal_text_label.set_markup(modal_text)
+        
+        self.run_options_dialog = Adw.MessageDialog(
+            heading='Opening sideloaded AppImage',
+            body='',
+            extra_child=modal_text_label
+        )
+        
+        self.run_options_dialog.add_response('cancel', 'cancel')
+        self.run_options_dialog.add_response('run', 'Run')
+
+        self.run_options_dialog.connect('response', self.on_run_option_selected)
+        self.run_options_dialog.show()
 
         if get_giofile_content_type(file) == 'application/vnd.appimage':
             try:
@@ -280,6 +300,9 @@ class AppImageProvider(Provider):
             desktop_entry=desktop_entry,
             tmp_icon=extracted.icon_file
         )
+        
+    def on_run_option_selected(self):
+        pass
 
     def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
         pass
