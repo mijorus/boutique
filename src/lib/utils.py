@@ -3,6 +3,7 @@ import os
 import time
 import logging
 import requests
+import hashlib
 
 from gi.repository import Gtk, Adw, GdkPixbuf, GLib, Gdk, Gio
 
@@ -68,6 +69,17 @@ def qq(condition, is_true, is_false):
 
 def get_giofile_content_type(file: Gio.File):
     return file.query_info('standard::', Gio.FileQueryInfoFlags.NONE, None).get_content_type()
+    
+def gio_copy(file: Gio.File, destination: Gio.File):
+    return file.copy(
+        destination, 
+        Gio.FileCopyFlags.OVERWRITE, 
+        None, None, None, None
+    )
+
+def get_file_hash(file: Gio.File):
+    with open(file.get_path(), 'rb') as f:
+        return hashlib.md5(f.read()).hexdigest()
 
 def send_notification(notification=Gio.Notification, tag=None):
     if not tag: tag = str(time.time_ns())

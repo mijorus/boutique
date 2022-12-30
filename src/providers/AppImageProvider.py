@@ -15,7 +15,7 @@ from xdg import DesktopEntry
 
 from ..lib import flatpak, terminal
 from ..models.AppListElement import AppListElement, InstalledStatus
-from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type, get_gsettings, create_dict
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type, get_gsettings, create_dict, gio_copy, get_file_hash
 from ..components.CustomComponents import LabelStart
 from ..models.Provider import Provider
 from ..models.Models import FlatpakHistoryElement, AppUpdateElement
@@ -41,6 +41,7 @@ class AppImageProvider(Provider):
         self.update_messages = []
 
         self.modal_gfile: Optional[Gio.File] = None
+        self.modal_gfile_createshortcut_check: Optional[Gtk.CheckButton] = None
 
     def list_installed(self) -> List[AppListElement]:
         default_folder_path = self.get_appimages_default_destination_path()
@@ -62,7 +63,7 @@ class AppImageProvider(Provider):
                                 name=entry.getName(),
                                 description=entry.getComment(),
                                 icon=entry.getIcon(),
-                                app_id=entry.getExec(),
+                                app_id=(entry.getExec().replace('.appimage', '').split('_')[-1]),
                                 installed_status=InstalledStatus.INSTALLED,
                                 file_path=entry.getExec(),
                                 provider=self.name,
@@ -154,9 +155,10 @@ class AppImageProvider(Provider):
         pass
 
     def install_file(self, list_element: AppListElement, callback: Callable[[bool], None]) -> bool:
+        logging.info('Installing appimage: ' + list_element.extra_data['file_path'])
+
         def install_job():
             list_element.installed_status = InstalledStatus.INSTALLING
-
             extracted_appimage = None
 
             try:
@@ -164,7 +166,6 @@ class AppImageProvider(Provider):
                 dest_file_info = extracted_appimage.appimage_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS)
 
                 if extracted_appimage.extraction_folder.query_exists():
-
                     # Move .appimage to its default location
                     appimages_destination_path = self.get_appimages_default_destination_path()
 
@@ -175,11 +176,7 @@ class AppImageProvider(Provider):
 
                     dest_appimage_file = Gio.File.new_for_path(appimages_destination_path + '/' + safe_app_name + '.appimage')
 
-                    if extracted_appimage.appimage_file.copy(
-                        dest_appimage_file, 
-                        Gio.FileCopyFlags.OVERWRITE, 
-                        None, None, None, None
-                    ):
+                    if gio_copy(extracted_appimage.appimage_file, dest_appimage_file):
                         log(f'file copied to {appimages_destination_path}')
 
                         os.chmod(dest_appimage_file.get_path(), 0o755)
@@ -187,21 +184,19 @@ class AppImageProvider(Provider):
 
                         # copy the icon file
                         icon_file = None
-                        dest_icon_file_path = 'applications-other' # a default icon
-
+                        dest_appimage_icon_file = None
                         if extracted_appimage.desktop_entry:
                             icon_file = extracted_appimage.icon_file
-                            dest_icon_file_path = f'{appimages_destination_path}/icons/{dest_file_info.get_name()}'
 
-                        if icon_file and os.path.exists(icon_file):
+                        if icon_file and os.path.exists(icon_file.get_path()):
                             if not os.path.exists(f'{appimages_destination_path}/icons'):
                                 os.mkdir(f'{appimages_destination_path}/icons')
 
-                            shutil.copy(icon_file, dest_icon_file_path)
+                            dest_appimage_icon_file = Gio.File.new_for_path(f'{appimages_destination_path}/icons/{safe_app_name}')
+                            gio_copy(icon_file, dest_appimage_icon_file)
 
                         # Move .desktop file to its default location
-                        desktop_files_destination_path = GLib.get_home_dir() + '/.local/share/applications'
-                        dest_destop_file_path = f'{desktop_files_destination_path}/{safe_app_name}.desktop'
+                        dest_destop_file_path = f'{GLib.get_user_data_dir()}/applications/{safe_app_name}.desktop'
                         dest_destop_file_path = dest_destop_file_path.replace(' ', '_')
 
                         with open(extracted_appimage.desktop_file.get_path(), 'r') as desktop_file_python:
@@ -216,14 +211,16 @@ class AppImageProvider(Provider):
 
                             desktop_file_content = re.sub(
                                 r'Icon=.*$',
-                                f"Icon={dest_icon_file_path}",
+                                f"Icon={dest_appimage_icon_file.get_path() if dest_appimage_icon_file else 'applications-other'}",
                                 desktop_file_content,
                                 flags=re.MULTILINE
                             )
 
                             final_app_name = extracted_appimage.appimage_file.get_basename()
                             if extracted_appimage.desktop_entry:
-                                final_app_name = f"{extracted_appimage.desktop_entry.getName()} ({extracted_appimage.desktop_entry.get('X-AppImage-Version')})"
+                                final_app_name = f"{extracted_appimage.desktop_entry.getName()}"
+                                if extracted_appimage.desktop_entry.get('X-AppImage-Version'):
+                                    final_app_name += f' ({extracted_appimage.desktop_entry.get("X-AppImage-Version")})'
 
                             desktop_file_content = re.sub(
                                 r'Name=.*$',
@@ -236,20 +233,19 @@ class AppImageProvider(Provider):
                                 desktop_file_python_dest.write(desktop_file_content)
 
                         if os.path.exists(dest_destop_file_path):
-                            log('desktop file copied to ' + desktop_files_destination_path)
                             list_element.extra_data['desktop_entry'] = DesktopEntry.DesktopEntry(filename=dest_destop_file_path)
                             list_element.installed_status = InstalledStatus.INSTALLED
 
             except Exception as e:
                 try:
                     self.post_file_extraction_cleanup(extracted_appimage)
-                except Exception as e:
+                except Exception as g:
                     pass
 
                 list_element.installed_status = InstalledStatus.ERROR
+                logging.error(e)
                 raise e
 
-            self.post_file_extraction_cleanup(extracted_appimage)
             callback(list_element.installed_status == InstalledStatus.INSTALLED)
 
         threading.Thread(target=install_job, daemon=True).start()
@@ -257,18 +253,6 @@ class AppImageProvider(Provider):
 
     def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
         app_name: str = file.get_parse_name().split('/')[-1]
-        desktop_entry = None
-
-        if get_giofile_content_type(file) == 'application/vnd.appimage':
-            try:
-                extracted = self.extract_appimage(file.get_path())
-
-                if extracted.desktop_entry.getName():
-                    app_name = extracted.desktop_entry.getName()
-                    desktop_entry = extracted.desktop_entry
-
-            except Exception as e:
-                logging.error(e)
 
         return AppListElement(
             name=app_name, 
@@ -277,8 +261,6 @@ class AppImageProvider(Provider):
             provider=self.name, 
             installed_status=InstalledStatus.NOT_INSTALLED,
             file_path=file.get_path(),
-            desktop_entry=desktop_entry,
-            tmp_icon=extracted.icon_file
         )
 
     def open_file_dialog(self, file: Gio.File, parent: Gtk.Widget):
@@ -293,7 +275,8 @@ class AppImageProvider(Provider):
         modal_text_label.set_markup(modal_text)
         extra_content.append(modal_text_label)
 
-        extra_content.append(Gtk.CheckButton(label='Create a desktop shortcut'))
+        self.modal_gfile_createshortcut_check = Gtk.CheckButton(label='Create a desktop shortcut')
+        extra_content.append(self.modal_gfile_createshortcut_check)
         
         self.open_file_options_dialog = Adw.MessageDialog(
             heading='Opening sideloaded AppImage',
@@ -315,7 +298,12 @@ class AppImageProvider(Provider):
             logging.info('Running appimage: ' + self.modal_gfile.get_path())
             os.chmod(self.modal_gfile.get_path(), 0o755)
             terminal.threaded_sh([self.modal_gfile.get_path()])
+            
+            if self.modal_gfile_createshortcut_check and (self.modal_gfile_createshortcut_check.get_active()):
+                l = AppListElement(self.modal_gfile.get_path(), '', self.modal_gfile.get_path(), self.name, InstalledStatus.NOT_INSTALLED, file_path=self.modal_gfile.get_path())
+                self.install_file(l, lambda x: None)
 
+        self.modal_gfile_createshortcut_check = None
         self.modal_gfile = None
         self.open_file_options_dialog.close()
 
@@ -329,9 +317,8 @@ class AppImageProvider(Provider):
         pass
 
     def post_file_extraction_cleanup(self, extraction: ExtractedAppImage):
-
         if extraction.container_folder.query_exists():
-            if extraction.container_folder.get_path().startswith(GLib.get_user_cache_dir()):
+            if extraction.container_folder.get_path().startswith(GLib.get_tmp_dir()):
                 shutil.rmtree(extraction.container_folder.get_path())
 
     def extract_appimage(self, file_path: str) -> ExtractedAppImage:
@@ -349,9 +336,7 @@ class AppImageProvider(Provider):
         temp_file = None
 
         ## hash file
-        with open(file.get_path(), 'rb') as f:
-            temp_file = 'boutique_appimage_' + hashlib.md5(f.read()).hexdigest()
-
+        temp_file = 'boutique_appimage_' + get_file_hash(file)
         folder = Gio.File.new_for_path(GLib.get_tmp_dir() + f'/it.mijorus.boutique/appimages/{temp_file}')
 
         if folder.query_exists():
