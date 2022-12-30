@@ -71,6 +71,7 @@ class BoutiqueApplication(Adw.Application):
                     self.win.present()
                     
                     dialog = provider.open_file_dialog(files[0], self.win)
+                    dialog.connect('response', lambda w, _: self.win.close())
                     dialog.show()
                     break
 

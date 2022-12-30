@@ -40,6 +40,8 @@ class AppImageProvider(Provider):
         self.general_messages = []
         self.update_messages = []
 
+        self.modal_gfile: Optional[Gio.File] = None
+
     def list_installed(self) -> List[AppListElement]:
         default_folder_path = self.get_appimages_default_destination_path()
         output = []
@@ -143,7 +145,7 @@ class AppImageProvider(Provider):
 
     def run(self, el: AppListElement):
         if self.get_appimages_default_destination_path() in el.extra_data['file_path']:
-            terminal.threaded_sh([f'{el.extra_data["file_path"]}'], force=True)
+            terminal.threaded_sh([f'{el.extra_data["file_path"]}'])
 
     def can_install_file(self, file: Gio.File) -> bool:
         return get_giofile_content_type(file) in ['application/vnd.appimage', 'application/x-iso9660-appimage']
@@ -255,8 +257,6 @@ class AppImageProvider(Provider):
 
     def create_list_element_from_file(self, file: Gio.File) -> AppListElement:
         app_name: str = file.get_parse_name().split('/')[-1]
-        # app_name = re.sub(r'\.appimage$', '', app_name, flags=re.IGNORECASE)
-        # app_name = re.sub(r'\.x86_64$', '', app_name, flags=re.IGNORECASE)
         desktop_entry = None
 
         if get_giofile_content_type(file) == 'application/vnd.appimage':
@@ -282,6 +282,7 @@ class AppImageProvider(Provider):
         )
 
     def open_file_dialog(self, file: Gio.File, parent: Gtk.Widget):
+        self.modal_gfile = file
         app_name: str = file.get_parse_name().split('/')[-1]
         modal_text = f"<b>You are trying to open the following AppImage: </b>\n\n📦️ {app_name}"
         modal_text += '\n\nAppImages are self-contained applications that\ncan be executed without requiring installation'
@@ -309,11 +310,14 @@ class AppImageProvider(Provider):
         self.open_file_options_dialog.set_transient_for(parent)
         return self.open_file_options_dialog
 
-    def on_run_option_selected(self, response: str, user_data: str):
-        if response == 'run':
-            logging.info('Running appimage')
-        elif response == 'cancel':
-            self.open_file_options_dialog.close()
+    def on_run_option_selected(self, widget: Adw.MessageDialog, user_response: str):
+        if user_response == 'run' and self.modal_gfile:
+            logging.info('Running appimage: ' + self.modal_gfile.get_path())
+            os.chmod(self.modal_gfile.get_path(), 0o755)
+            terminal.threaded_sh([self.modal_gfile.get_path()])
+
+        self.modal_gfile = None
+        self.open_file_options_dialog.close()
 
     def get_selected_source(self, list_element: list[AppListElement], source_id: str) -> AppListElement:
         pass

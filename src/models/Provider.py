@@ -82,7 +82,7 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def open_file_dialog(self, file: Gio.File):
+    def open_file_dialog(self, file: Gio.File, parent: Gtk.Widget):
         pass
 
     @abstractmethod

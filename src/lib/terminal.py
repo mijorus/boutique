@@ -5,10 +5,6 @@ import threading
 from typing import Callable, List, Union
 from .utils import log
 
-def _command_is_allowed(command: str) -> bool:
-    allowed = ['flatpak', 'xdg-open']
-    return (command.split(' ')[0] in allowed) or ('--appimage-extract' in command)
-
 _sanitizer = None
 def sanitize(_input: str) -> str:
     global _sanitizer
@@ -18,10 +14,8 @@ def sanitize(_input: str) -> str:
 
     return re.sub(_sanitizer, " ", _input)
 
-def sh(command: Union[str, List[str]], return_stderr=False, force=False) -> str:
+def sh(command: Union[str, List[str]], return_stderr=False) -> str:
     to_check = command if isinstance(command, str) else ' '.join(command)
-    if (_command_is_allowed(to_check) is False) and (force is not True):
-        raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     try:
         log(f'Running {command}')
@@ -34,19 +28,17 @@ def sh(command: Union[str, List[str]], return_stderr=False, force=False) -> str:
 
         if return_stderr:
             return e.output
-        else:
-            raise e
+
+        raise e
 
     return re.sub(r'\n$', '', output.stdout)
 
-def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, force=False, return_stderr=False):
+def threaded_sh(command: Union[str, List[str]], callback: Callable[[str], None]=None, return_stderr=False):
     to_check = command if isinstance(command, str) else command[0]
-    if (_command_is_allowed(to_check) is False) and (force is not True):
-        raise Exception('Running this command is not allowed. The number available commands is restricted for security reasons')
 
     def run_command(command: str, callback: Callable[[str], None]=None):
         try:
-            output = sh(command, force=force, return_stderr=return_stderr)
+            output = sh(command, return_stderr)
 
             if callback:
                 callback(re.sub(r'\n$', '', output))
