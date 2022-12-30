@@ -155,16 +155,17 @@ class AppImageProvider(Provider):
         pass
 
     def install_file(self, list_element: AppListElement, callback: Callable[[bool], None]) -> bool:
-        logging.info('Installing appimage: ' + list_element.extra_data['file_path'])
-
         def install_job():
+            logging.info('Installing appimage: ' + list_element.extra_data['file_path'])
             list_element.installed_status = InstalledStatus.INSTALLING
             extracted_appimage = None
 
+            logging.info('test1')
             try:
                 extracted_appimage = self.extract_appimage(file_path=list_element.extra_data['file_path'])
                 dest_file_info = extracted_appimage.appimage_file.query_info('*', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS)
 
+                logging.info('test2')
                 if extracted_appimage.extraction_folder.query_exists():
                     # Move .appimage to its default location
                     appimages_destination_path = self.get_appimages_default_destination_path()
@@ -175,6 +176,7 @@ class AppImageProvider(Provider):
                         safe_app_name = f'{terminal.sanitize(extracted_appimage.desktop_entry.getName())}_{dest_file_info.get_name()}'
 
                     dest_appimage_file = Gio.File.new_for_path(appimages_destination_path + '/' + safe_app_name + '.appimage')
+                    logging.info(2)
 
                     if gio_copy(extracted_appimage.appimage_file, dest_appimage_file):
                         log(f'file copied to {appimages_destination_path}')
@@ -235,15 +237,20 @@ class AppImageProvider(Provider):
                         if os.path.exists(dest_destop_file_path):
                             list_element.extra_data['desktop_entry'] = DesktopEntry.DesktopEntry(filename=dest_destop_file_path)
                             list_element.installed_status = InstalledStatus.INSTALLED
+                else:
+                    logging.info('errore')
+                    raise 'Extraction folder does not exists'
 
             except Exception as e:
+                logging.error('Appimage installation error: ' + e)
+
                 try:
                     self.post_file_extraction_cleanup(extracted_appimage)
                 except Exception as g:
                     pass
 
+                terminal.sh(['update-desktop-database'])
                 list_element.installed_status = InstalledStatus.ERROR
-                logging.error(e)
                 raise e
 
             callback(list_element.installed_status == InstalledStatus.INSTALLED)
@@ -298,10 +305,11 @@ class AppImageProvider(Provider):
             logging.info('Running appimage: ' + self.modal_gfile.get_path())
             os.chmod(self.modal_gfile.get_path(), 0o755)
             terminal.threaded_sh([self.modal_gfile.get_path()])
-            
+
             if self.modal_gfile_createshortcut_check and (self.modal_gfile_createshortcut_check.get_active()):
-                l = AppListElement(self.modal_gfile.get_path(), '', self.modal_gfile.get_path(), self.name, InstalledStatus.NOT_INSTALLED, file_path=self.modal_gfile.get_path())
+                l = AppListElement(self.modal_gfile.get_path(), '', get_file_hash(self.modal_gfile), self.name, InstalledStatus.NOT_INSTALLED, file_path=self.modal_gfile.get_path())
                 self.install_file(l, lambda x: None)
+
 
         self.modal_gfile_createshortcut_check = None
         self.modal_gfile = None
