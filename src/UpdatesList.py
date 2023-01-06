@@ -69,7 +69,6 @@ class UpdatesList(Gtk.ScrolledWindow):
         for widget in self.updates_row_list_items:
             self.updates_row_list.remove(widget)
 
-        # self.updates_title_label.set_label('Searching for updates...')
         self.toggle_updates_title_label_state('Searching for updates...', True)
         self.updates_row_list_spinner.set_visible(True)
         self.updates_row_list.set_css_classes(["boxed-list"])
@@ -88,11 +87,11 @@ class UpdatesList(Gtk.ScrolledWindow):
                     if (a.id == upg.id):
                         upg.extra_data['app_list_element'] = a
 
-                        if a.extra_data and ('version' in a.extra_data) and a.extra_data['version'] != upg.to_version:
-                            upg.to_version = a.extra_data['version'] + ' > ' + upg.to_version
+                        if a.extra_data and upg.to_version:
+                            if ('version' in a.extra_data) and (a.extra_data['version'] != upg.to_version):
+                                upg.to_version = a.extra_data['version'] + ' > ' + upg.to_version
 
                         updatable_elements.append(upg)
-                        log(upg.to_version)
                         break
 
         GLib.idle_add(self.render_updatables, updatable_elements)
@@ -104,9 +103,11 @@ class UpdatesList(Gtk.ScrolledWindow):
             update_is_an_app = False
 
             list_element = upg.extra_data['app_list_element']
-            list_element.description = upg.to_version or ''
 
             app_list_item = AppListBoxItem(list_element, activatable=False, selectable=False, hexpand=True)
+            if  upg.to_version:
+                app_list_item.set_update_version(upg.to_version)
+            
             GLib.idle_add(app_list_item.load_icon)
 
             self.updates_row_list.append(app_list_item)
