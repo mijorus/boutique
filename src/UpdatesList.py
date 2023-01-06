@@ -36,9 +36,9 @@ class UpdatesList(Gtk.ScrolledWindow):
         self.updates_row_list = Gtk.ListBox(css_classes=["boxed-list"], margin_bottom=25)
 
         
-        self.updates_title_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.updates_title_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         
-        self.updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER, margin_bottom=5)
+        self.updates_title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_bottom=10, spacing=5)
         self.updates_title_container.append(self.updates_title_row)
         
         self.updates_row_list_spinner = Gtk.Spinner(spinning=True, margin_start=5, visible=False)
@@ -119,14 +119,6 @@ class UpdatesList(Gtk.ScrolledWindow):
             self.toggle_updates_title_label_state('Available updates', False)
         else:
             self.toggle_updates_title_label_state('Everything is up to date!', True)
-            # self.update_all_btn.set_visible(False)
-
-            # self.updates_title_row.set_vexpand(True)
-            # self.updates_title_row.set_halign(Gtk.Align.CENTER)
-
-            # self.updates_title_label.set_label('Everything is up to date!')
-            # self.updates_title_label.set_css_classes(['title-3'])
-            # self.updates_row_list.set_css_classes([])
 
         self.busy = False
 
@@ -144,12 +136,12 @@ class UpdatesList(Gtk.ScrolledWindow):
             self.updates_row_list.set_visible(False)
         else:
             self.updates_row_list.set_visible(True)
-            self.updates_row_list.set_css_classes([])
 
-            self.updates_title_label.set_css_classes([])
+            self.updates_title_label.set_css_classes(['title-4'])
 
             self.updates_title_container.set_vexpand(False)
-            self.updates_title_container.set_halign(Gtk.Align.START)
+            self.updates_title_container.set_halign(Gtk.Align.FILL)
+            self.updates_title_container.set_halign(Gtk.Align.FILL)
             self.updates_title_container.set_valign(Gtk.Align.START)
 
             self.update_all_btn.set_visible(True)
