@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable, Dict, Tuple, Optional
+from typing import List, Callable, Dict, Tuple, Optional, TypeVar
 from .AppListElement import AppListElement
 from .Models import AppUpdateElement, ProviderMessage
 from .AppListElement import InstalledStatus

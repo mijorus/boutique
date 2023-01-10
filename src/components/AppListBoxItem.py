@@ -74,7 +74,3 @@ class AppListBoxItem(Gtk.ListBoxRow):
     def set_update_version(self, text: Optional[str]):
         self.update_version.set_visible(text != None)
         self.update_version.set_label(text if text else '')
-
-    def __del__(self):
-        # self.image_container.get_first_child().clear()
-        pass

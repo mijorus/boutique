@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from .lib.terminal import sh
+from .lib.utils import log
+from .providers.providers_list import providers
+from .AboutDialog import AboutDialog
+from .BoutiqueWindow import BoutiqueWindow
 import sys
 import gi
 import logging
@@ -23,12 +28,7 @@ import subprocess
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio, Adw, Gdk, GLib
-from .BoutiqueWindow import BoutiqueWindow
-from .AboutDialog import AboutDialog
-from .providers.providers_list import providers
-from .lib.utils import log
-from .lib.terminal import sh
+from gi.repository import Gtk, Gio, Adw, Gdk, GLib # noqa
 
 class BoutiqueApplication(Adw.Application):
     """The main application singleton class."""
@@ -67,9 +67,8 @@ class BoutiqueApplication(Adw.Application):
         if files:
             for p, provider in providers.items():
                 if provider.can_install_file(files[0]):
-                    self.win = Adw.ApplicationWindow(application=self)
-                    self.win.present()
-                    
+                    self.win = Adw.ApplicationWindow(application=self, visible=False)
+
                     dialog = provider.open_file_dialog(files[0], self.win)
                     dialog.connect('response', lambda w, _: self.win.close())
                     dialog.show()
@@ -129,12 +128,13 @@ class BoutiqueApplication(Adw.Application):
 
         sh(['xdg-open',  GLib.get_user_cache_dir() + '/boutique.log'])
 
+
 def main(version):
     """The application's entry point."""
-    
+
     log_file = GLib.get_user_cache_dir() + '/boutique.log'
     print('Logging to file ' + log_file)
-    
+
     app = BoutiqueApplication()
     logging.basicConfig(
         filename=log_file,
