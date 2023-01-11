@@ -131,7 +131,7 @@ class BrowseApps(Gtk.ScrolledWindow):
 
                 self.search_results.append(list_row)
                 self.search_results_items.append(list_row)
-                load_img_threads.append(threading.Thread(target=lambda r: r.load_icon(from_network=True), args=(list_row, )))
+                load_img_threads.append(threading.Thread(target=lambda r: r.load_icon(load_from_network=True), args=(list_row, )))
 
             for t in load_img_threads:
                 t.start()

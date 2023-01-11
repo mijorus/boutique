@@ -82,6 +82,8 @@ class FlatpakProvider(Provider):
         output: list[AppListElement] = []
 
         for app in flatpak.apps_list():
+            if app['application'] == 'it.mijorus.boutique':
+                continue
 
             output.append(
                 AppListElement(
@@ -101,35 +103,38 @@ class FlatpakProvider(Provider):
         return output
 
     def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool = False) -> Gtk.Image:
-        icon_in_local_path = False
-        local_file_path = None
+        pixel_size = 45
+        image = Gtk.Image(resource=self.icon)
 
-        if 'origin' in list_element.extra_data and 'arch' in list_element.extra_data:
+        if load_from_network:
+            pref_remote = list_element.extra_data['remotes'][0]
+            if ('flathub' in list_element.extra_data['remotes']):
+                pref_remote = 'flathub'
+
+            remotes = flatpak.remotes_list()
+            pref_remote_data = key_in_dict(remotes, pref_remote)
+
+            if pref_remote_data and ('url' in pref_remote_data):
+                try:
+                    url = re.sub(r'\/$', '', pref_remote_data['url'])
+                    image = gtk_image_from_url(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png', image)
+                    image.set_pixel_size(pixel_size)
+                    return image
+
+                except Exception as e:
+                    logging.warn(e)
+
+        if ('origin' in list_element.extra_data) and ('arch' in list_element.extra_data):
             repo = list_element.extra_data['origin']
             aarch = list_element.extra_data['arch']
             local_file_path = f'{GLib.get_user_data_dir()}/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
 
-        if local_file_path and GLib.file_test(local_file_path, GLib.FileTest.EXISTS):
-            image = Gtk.Image.new_from_file(local_file_path)
-            image.set_pixel_size(45)
-        else:
-            image = Gtk.Image(resource=self.icon)
-            remotes = flatpak.remotes_list()
+            if GLib.file_test(local_file_path, GLib.FileTest.EXISTS):
+                image = Gtk.Image.new_from_file(local_file_path)
+        elif Gtk.IconTheme.get_for_display(Gdk.Display.get_default()).has_icon(list_element.id):
+            image = Gtk.Image(icon_name=list_element.id)
 
-            if load_from_network:
-                pref_remote = list_element.extra_data['remotes'][0]
-                if ('flathub' in list_element.extra_data['remotes']):
-                    pref_remote = 'flathub'
-
-                pref_remote_data = key_in_dict(remotes, pref_remote)
-
-                if pref_remote_data and ('url' in pref_remote_data):
-                    try:
-                        url = re.sub(r'\/$', '', pref_remote_data['url'])
-                        gtk_image_from_url(f'{url}/appstream/x86_64/icons/128x128/{urllib.parse.quote(list_element.id, safe="")}.png', image)
-                    except Exception as e:
-                        log(e)
-
+        image.set_pixel_size(pixel_size)
         return image
 
     def uninstall(self, list_element: AppListElement, callback: Callable[[bool], None] = None):
@@ -150,7 +155,7 @@ class FlatpakProvider(Provider):
 
             success = True
         except Exception as e:
-            print(e)
+            logging.error(e)
             after_uninstall(False)
             list_element.set_installed_status(InstalledStatus.ERROR)
 
@@ -168,7 +173,7 @@ class FlatpakProvider(Provider):
                     callback(True)
 
             except Exception as e:
-                print(e)
+                logging.error(e)
                 list_element.set_installed_status(InstalledStatus.ERROR)
                 if callback:
                     callback(False)
@@ -531,7 +536,7 @@ class FlatpakProvider(Provider):
                 self.do_updates_need_refresh = True
                 self.refresh_installed_status_callback(status=InstalledStatus.INSTALLED)
             except Exception as e:
-                print(e)
+                logging.error(e)
                 self.refresh_installed_status_callback(final=True, status=InstalledStatus.ERROR)
 
         def on_downgrade_dialog_response(dialog: Gtk.Dialog, response: int):
