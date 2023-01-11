@@ -12,7 +12,8 @@ from typing import TypedDict
 from xdg import DesktopEntry
 
 from ..lib import flatpak, terminal
-from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window
+from ..lib.async_utils import _async
+from ..lib.utils import log, cleanhtml, key_in_dict, gtk_image_from_url, qq, get_application_window, get_giofile_content_type
 from ..models.AppListElement import AppListElement, InstalledStatus
 from ..models.Models import ProviderMessage
 from ..components.CustomComponents import LabelStart
@@ -21,12 +22,14 @@ from ..models.Models import FlatpakHistoryElement, AppUpdateElement
 from typing import List, Callable, Union, Dict, Optional, List
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Gio, GObject, Adw
 
+
 class FlatpakState(TypedDict):
     installed_status: InstalledStatus
 
+
 class FlatpakProvider(Provider):
     def __init__(self):
-    
+
         self.name = 'flatpak'
         self.icon = "/it/mijorus/boutique/assets/flathub-badge-logo.svg"
         self.small_icon = "/it/mijorus/boutique/assets/Flatpak-Logo-showcase.png"
@@ -51,8 +54,9 @@ class FlatpakProvider(Provider):
 
         self.general_messages = []
         self.update_messages = []
+        self.modal_gfile = None
 
-    def is_installed(self, list_element: AppListElement, alt_sources: list[AppListElement]=[]):
+    def is_installed(self, list_element: AppListElement, alt_sources: list[AppListElement] = []):
         ref = self.get_ref(list_element)
         i = flatpak.is_installed(ref)
 
@@ -81,13 +85,13 @@ class FlatpakProvider(Provider):
 
             output.append(
                 AppListElement(
-                    app['name'], 
-                    app['description'], 
-                    app['application'], 
-                    'flatpak', 
+                    app['name'],
+                    app['description'],
+                    app['application'],
+                    'flatpak',
                     InstalledStatus.INSTALLED,
 
-                    ref=app['ref'], 
+                    ref=app['ref'],
                     origin=app['origin'],
                     arch=app['arch'],
                     version=app['version'],
@@ -96,7 +100,7 @@ class FlatpakProvider(Provider):
 
         return output
 
-    def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool=False) -> Gtk.Image:
+    def get_icon(self, list_element: AppListElement, repo='flathub', load_from_network: bool = False) -> Gtk.Image:
         icon_in_local_path = False
         local_file_path = None
 
@@ -129,22 +133,22 @@ class FlatpakProvider(Provider):
 
         return image
 
-    def uninstall(self, list_element: AppListElement, callback: Callable[[bool], None]=None):
+    def uninstall(self, list_element: AppListElement, callback: Callable[[bool], None] = None):
         success = False
 
         def after_uninstall(_: bool):
             list_element.set_installed_status(InstalledStatus.NOT_INSTALLED)
-            
+
             if callback:
                 callback(_)
 
         try:
             flatpak.remove(
-                self.get_ref(list_element), 
-                list_element.id, 
+                self.get_ref(list_element),
+                list_element.id,
                 lambda _: after_uninstall(True)
             )
-            
+
             success = True
         except Exception as e:
             print(e)
@@ -153,7 +157,7 @@ class FlatpakProvider(Provider):
 
         return success
 
-    def install(self, list_element: AppListElement, callback: Callable[[bool], None]=None):
+    def install(self, list_element: AppListElement, callback: Callable[[bool], None] = None):
         def install_thread(list_element: AppListElement, callback: Callable):
             try:
                 ref = self.get_ref(list_element)
@@ -161,12 +165,14 @@ class FlatpakProvider(Provider):
                 flatpak.install(list_element.extra_data['origin'], ref)
                 list_element.set_installed_status(InstalledStatus.INSTALLED)
 
-                if callback: callback(True)
+                if callback:
+                    callback(True)
 
             except Exception as e:
                 print(e)
                 list_element.set_installed_status(InstalledStatus.ERROR)
-                if callback: callback(False)
+                if callback:
+                    callback(False)
 
         if not 'origin' in list_element.extra_data:
             raise Exception('Missing "origin" in list_element')
@@ -192,9 +198,9 @@ class FlatpakProvider(Provider):
                 continue
 
             if not app['application'] in apps:
-                apps[ app['application'] ] = []
+                apps[app['application']] = []
 
-            apps[ app['application'] ].append(app)
+            apps[app['application']].append(app)
 
         for app_id, app_sources in apps.items():
             installed_status = InstalledStatus.NOT_INSTALLED
@@ -215,18 +221,18 @@ class FlatpakProvider(Provider):
 
                 for r in app_remotes:
                     if (r in fk_remotes):
-                        fk_remote_title = fk_remotes[r]['title'] 
+                        fk_remote_title = fk_remotes[r]['title']
 
                         if len(app_sources) > 1:
                             fk_remote_title += f' ({branch_name})'
 
                         app_source['source_id'] = f'{r}:{app_source["application"]}/{flatpak.get_default_aarch()}/{app_source["branch"]}'
-                        remotes_map[ app_source['source_id'] ] = fk_remote_title
+                        remotes_map[app_source['source_id']] = fk_remote_title
 
                         source_list_element = AppListElement(
-                            ( app_source['name'] ), 
-                            ( app_source['description'] ), 
-                            app_source['application'], 
+                            (app_source['name']),
+                            (app_source['description']),
+                            app_source['application'],
                             'flatpak',
                             installed_status,
                             None,
@@ -240,11 +246,12 @@ class FlatpakProvider(Provider):
                         )
 
                         output.append(source_list_element)
+
         return output
 
     def get_long_description(self, el: AppListElement) -> str:
         from_remote = key_in_dict(el.extra_data, 'origin')
-        
+
         if ('remotes' in el.extra_data and 'flathub' in el.extra_data['remotes']):
             from_remote = 'flathub'
 
@@ -265,16 +272,16 @@ class FlatpakProvider(Provider):
             element_remotes.append(list_element.extra_data['origin'])
 
         out = []
-    
+
         for r in element_remotes:
             if (r in remotes):
                 out.append(self.get_remote_link(r, list_element))
 
         return out
-    
+
     def get_installed_from_source(self, el):
         return el.extra_data['origin'].capitalize()
-    
+
     def get_remote_link(self, r: str, el) -> str:
         remotes = flatpak.remotes_list()
 
@@ -284,7 +291,7 @@ class FlatpakProvider(Provider):
                 return remote_link
             else:
                 return remotes[r]['title']
-                
+
         return ''
 
     def load_extra_data_in_appdetails(self, widget, list_element: AppListElement):
@@ -303,16 +310,16 @@ class FlatpakProvider(Provider):
             return list_element.extra_data['ref']
 
         return f'{list_element.id}/{flatpak.get_default_aarch()}/{list_element.extra_data["branch"]}'
-        
+
     def create_history_expander(self, history, expander, success: bool):
         if (not success):
             expander.set_label('Couldn\'t load data')
             return
-    
+
         expander.set_label('History')
 
         list_box = Gtk.ListBox(css_classes=["boxed-list"], show_separators=False, margin_top=10)
-        
+
         if history:
             for h in history:
                 row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=5, margin_bottom=5, margin_start=5, margin_end=5)
@@ -367,7 +374,7 @@ class FlatpakProvider(Provider):
         #     self.update_remote_ls_updatable_cache()
         #     update_output = terminal.sh(['flatpak', 'update', '--user'], return_stderr=True)
         #     self.list_updatables_cache = update_output
-        
+
         latest_remote_upstream = []
         if self.list_updatables_cache == None:
             try:
@@ -404,16 +411,15 @@ class FlatpakProvider(Provider):
                         if (i > 0) and len(col) > 0:
                             cols.append(col)
 
-
-                    update_size = ''.join( re.findall(r'([0-9]|,)', cols[4], flags=re.A) ) if len(cols) > 3 else '0'
+                    update_size = ''.join(re.findall(r'([0-9]|,)', cols[4], flags=re.A)) if len(cols) > 3 else '0'
                     app_update_element = AppUpdateElement(cols[0], update_size, None)
-                    output.append( app_update_element )
+                    output.append(app_update_element)
 
                     for rc in latest_remote_upstream:
                         if rc['application'] == app_update_element.id:
                             app_update_element.to_version = rc['version']
                             break
-        
+
         # self.do_updates_need_refresh = False
         return output
 
@@ -467,14 +473,14 @@ class FlatpakProvider(Provider):
         threading.Thread(target=update_task, daemon=True, args=(callback, )).start()
 
     def can_install_file(self, file: Gio.File):
-        path: str = file.get_path()
-        return path.endswith('flatpakref')
+        return get_giofile_content_type(file) in ['application/vnd.flatpak.ref']
 
     def install_file(self, file, callback):
         def install_ref(path):
             log('installing ', path)
             terminal.sh(['flatpak', 'install', '--from', path, '--noninteractive', '--user'])
-            if callback: callback(True)
+            if callback:
+                callback(True)
             log('Installed!')
 
         threading.Thread(target=install_ref, args=(file.get_path(), ), daemon=True).start()
@@ -485,15 +491,15 @@ class FlatpakProvider(Provider):
 
         props: Dict[str, str] = {}
         for line in contents.split('\n'):
-            if not '=' in line: 
+            if not '=' in line:
                 continue
 
             keyval = line.split('=', maxsplit=1)
-            props[ keyval[0].lower() ] = keyval[1]
+            props[keyval[0].lower()] = keyval[1]
 
         # @todo
         installed_status = InstalledStatus.INSTALLED if flatpak.is_installed(props['name']) else InstalledStatus.NOT_INSTALLED
-        
+
         name = props['name']
         desc = props['title']
 
@@ -505,12 +511,12 @@ class FlatpakProvider(Provider):
             except:
                 pass
 
-        list_element = AppListElement(name, desc, props['name'], 'flatpak', installed_status, 
-            remotes=[ flatpak.find_remote_from_url(props['url']) ],
-            branch=props['branch'],
-            origin=flatpak.find_remote_from_url(props['url']),
-            file_path=file.get_path()
-        )
+        list_element = AppListElement(name, desc, props['name'], 'flatpak', installed_status,
+                                      remotes=[flatpak.find_remote_from_url(props['url'])],
+                                      branch=props['branch'],
+                                      origin=flatpak.find_remote_from_url(props['url']),
+                                      file_path=file.get_path()
+                                      )
 
         return list_element
 
@@ -520,7 +526,7 @@ class FlatpakProvider(Provider):
         def install_old_version():
             terminal.sh(['flatpak', 'kill', list_element.id], return_stderr=True)
             self.refresh_installed_status_callback(status=InstalledStatus.UPDATING)
-            
+
             try:
                 terminal.sh(['flatpak', 'update', f'--commit={data["commit"]}', '-y', '--noninteractive', list_element.id])
                 self.do_updates_need_refresh = True
@@ -578,10 +584,10 @@ class FlatpakProvider(Provider):
             if len(update_sections) > 1:
                 update_section = '1.\t' + update_sections[1]
                 self.update_section_cache = update_section
-    
+
     def get_source_details(self, list_element: AppListElement):
         return (
-            self.create_source_id(list_element), 
+            self.create_source_id(list_element),
             f"{list_element.extra_data['origin']} ({list_element.extra_data['branch']})"
         )
 
@@ -594,34 +600,80 @@ class FlatpakProvider(Provider):
     def updates_need_refresh(self) -> bool:
         return self.do_updates_need_refresh
 
-    def get_previews(self, el: AppListElement) -> list[Gtk.Widget]:
-        def load_preview_image(url, image: Gtk.Image, button: Gtk.Button):
-            gtk_image_from_url(screenshot_sizes[selected_size], image)
-            button.set_visible(True)
+    def open_file_dialog(self, file: Gio.File, parent: Gtk.Widget):
+        self.modal_gfile = file
 
-        if el.extra_data['origin'] == 'flathub':
-            appstream = flatpak.get_appstream(el.id, 'flathub')
+        extra_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        spinner = Gtk.Spinner(spinning=True)
+        extra_content.append(spinner)
 
-            output = []
-            if appstream and ('screenshots' in appstream):
-                for screenshot_sizes in appstream['screenshots']:
-                    selected_size = list(screenshot_sizes.keys())[0]
-                    preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-                    image = Gtk.Image(pixel_size=400)
-                    image_button = Gtk.Button(label='Open in the browser', visible=False, halign=Gtk.Align.CENTER)
-                    image_button.connect('clicked', lambda w: Gtk.show_uri(None, screenshot_sizes[selected_size], time.time()))
-
-                    preview.append(image)
-                    preview.append(image_button)
-
-                    output.append(preview)
-
-                    threading.Thread(target=load_preview_image, daemon=True, args=(screenshot_sizes[selected_size], image, image_button)).start()
-
-                return output
-
-        return []
+        self.open_file_options_dialog = Adw.MessageDialog(
+            heading='Loading sideloaded Flatpak',
+            body='',
+            extra_child=extra_content
+        )
+        
+        self.load_file_dialog_information(extra_content, spinner)
+        self.open_file_options_dialog.set_transient_for(parent)
+        return self.open_file_options_dialog
     
-    def open_file_dialog(self, file):
-        pass
+    @_async
+    def load_file_dialog_information(self, target_widget: Gtk.Widget, placeholder_widget: Gtk.Widget):
+        def update_modal_content():
+            with open(self.modal_gfile.get_path(), 'r') as f:
+                content = f.read()
+                if 'IsRuntime=false' in content:
+                    app_name: str = self.modal_gfile.get_parse_name().split('/')[-1]
+                    modal_text = f"<b>You are opening the following Flatpak: </b>\n\n📦️ {app_name}"
+                    
+                    for line in content.split('\n'):
+                        if line.startswith('Url='):
+                            modal_text += f'\n\nFrom the following repository:\n\n<b>🌐 {line.replace("Url=", "")}</b>'
+
+            modal_text_label = Gtk.Label()
+            modal_text_label.set_markup(modal_text)
+            target_widget.append(modal_text_label)
+
+            for action in [['cancel', 'Cancel', Adw.ResponseAppearance.DESTRUCTIVE], ['install', 'Install', Adw.ResponseAppearance.SUGGESTED]]:
+                self.open_file_options_dialog.add_response(action[0], action[1])
+                self.open_file_options_dialog.set_response_appearance(action[0], action[2])
+
+            self.open_file_options_dialog.connect('response', self.on_file_dialog_option_selected)
+            target_widget.remove(placeholder_widget)
+            
+        GLib.idle_add(update_modal_content)
+
+    def on_file_dialog_option_selected(self):
+        return
+
+    def get_previews(self, el):
+        return []
+
+    # def get_previews(self, el: AppListElement) -> list[Gtk.Widget]:
+    #     def load_preview_image(url, image: Gtk.Image, button: Gtk.Button):
+    #         gtk_image_from_url(screenshot_sizes[selected_size], image)
+    #         button.set_visible(True)
+
+    #     if el.extra_data['origin'] == 'flathub':
+    #         appstream = flatpak.get_appstream(el.id, 'flathub')
+
+    #         output = []
+    #         if appstream and ('screenshots' in appstream):
+    #             for screenshot_sizes in appstream['screenshots']:
+    #                 selected_size = list(screenshot_sizes.keys())[0]
+    #                 preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+    #                 image = Gtk.Image(pixel_size=400)
+    #                 image_button = Gtk.Button(label='Open in the browser', visible=False, halign=Gtk.Align.CENTER)
+    #                 image_button.connect('clicked', lambda w: Gtk.show_uri(None, screenshot_sizes[selected_size], time.time()))
+
+    #                 preview.append(image)
+    #                 preview.append(image_button)
+
+    #                 output.append(preview)
+
+    #                 threading.Thread(target=load_preview_image, daemon=True, args=(screenshot_sizes[selected_size], image, image_button)).start()
+
+    #             return output
+
+    #     return []

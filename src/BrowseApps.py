@@ -1,7 +1,7 @@
 import time
 import threading
 from typing import List, Dict
-from .lib import flatpak, utils
+from .lib import flatpak, utils, async_utils
 from .models.AppListElement import AppListElement
 from .models.Models import SearchResultsItems
 from .models.Provider import Provider
@@ -11,9 +11,10 @@ from .components.CustomComponents import CenteringBox, NoAppsFoundRow
 
 from gi.repository import Gtk, Adw, GObject, Gio, Gdk
 
+
 class BrowseApps(Gtk.ScrolledWindow):
     __gsignals__ = {
-      "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
+        "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
     }
 
     def __init__(self):
@@ -40,7 +41,7 @@ class BrowseApps(Gtk.ScrolledWindow):
         self.main_box.append(self.search_tip_revealer)
 
         self.search_results_slot = Gtk.Box(hexpand=True, vexpand=True, orientation=Gtk.Orientation.VERTICAL)
-        self.spinner = Gtk.Box(hexpand=True,halign=Gtk.Align.CENTER,margin_top=10,visible=False)
+        self.spinner = Gtk.Box(hexpand=True, halign=Gtk.Align.CENTER, margin_top=10, visible=False)
         self.spinner.append(Gtk.Spinner(spinning=True, margin_top=5, margin_bottom=5))
 
         self.search_results_slot.append(self.spinner)
@@ -58,7 +59,7 @@ class BrowseApps(Gtk.ScrolledWindow):
     def on_activated_row(self, listbox: Gtk.ListBox, row: AppListBoxItem):
         """Emit and event that changes the active page of the Stack in the parent widget"""
         if not hasattr(row, '_app'):
-            return 
+            return
 
         self.emit('selected-app', (row._app, row._alt_sources))
 
@@ -72,11 +73,6 @@ class BrowseApps(Gtk.ScrolledWindow):
         if self.search_results:
             self.search_results_slot.remove(self.search_results)
 
-        for i in self.search_results_items:
-            i.__del__()
-
-        self.search_results_items.clear()
-
         if not len(query):
             return
 
@@ -88,7 +84,7 @@ class BrowseApps(Gtk.ScrolledWindow):
         self.spinner.set_visible(True)
         utils.set_window_cursor('wait')
         self.search_entry.set_editable(False)
-        threading.Thread(target=self.populate_search, args=(query, )).start()
+        self.populate_search(query)
 
     def on_search_entry_changed(self, widget):
         query = widget.get_text()
@@ -96,9 +92,10 @@ class BrowseApps(Gtk.ScrolledWindow):
         if not self.search_results_slot_placeholder.get_visible():
             self.search_tip_revealer.set_reveal_child(len(query) > 0)
 
+    # @async_utils.idle
+    @async_utils._async
     def populate_search(self, query: str):
         """Async function to populate the listbox without affecting the main thread"""
-
         provider_results: List[AppListElement] = []
         for p, provider in providers.items():
             provider_results.extend(provider.search(query))
@@ -106,11 +103,12 @@ class BrowseApps(Gtk.ScrolledWindow):
         results_dict: dict[str, List[AppListElement]] = {}
         results: list[SearchResultsItems] = []
         for app in provider_results:
-            if (not app.id in results_dict): results_dict[app.id] = []
+            if (not app.id in results_dict):
+                results_dict[app.id] = []
             results_dict[app.id].append(app)
 
         for a, apps in results_dict.items():
-            results.append( SearchResultsItems(a, apps) )
+            results.append(SearchResultsItems(a, apps))
 
         self.search_results = Gtk.ListBox(hexpand=True, margin_top=10)
         self.search_results.set_css_classes(['boxed-list'])
@@ -125,18 +123,20 @@ class BrowseApps(Gtk.ScrolledWindow):
                 list_row = AppListBoxItem(
                     search_results_items.list_elements[0],
                     alt_sources=search_results_items.list_elements[1:],
-                    activatable=True, 
+                    activatable=True,
                     selectable=True,
-                    hexpand=True, 
+                    hexpand=True,
                     visible=True
                 )
 
                 self.search_results.append(list_row)
                 self.search_results_items.append(list_row)
-                load_img_threads.append( threading.Thread(target=lambda r: r.load_icon(from_network=True), args=(list_row, )) )
+                load_img_threads.append(threading.Thread(target=lambda r: r.load_icon(from_network=True), args=(list_row, )))
 
-            for t in load_img_threads: t.start()
-            for t in load_img_threads: t.join()
+            for t in load_img_threads:
+                t.start()
+            for t in load_img_threads:
+                t.join()
 
         results.clear()
         self.spinner.set_visible(False)

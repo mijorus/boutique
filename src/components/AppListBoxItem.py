@@ -2,6 +2,7 @@ from urllib import request
 from gi.repository import Gtk, Adw, Gdk, GObject, Pango, GLib
 from typing import Dict, List, Optional
 from ..lib.utils import cleanhtml
+from ..lib.async_utils import idle, _async
 import re
 
 from ..models.AppListElement import AppListElement, InstalledStatus
@@ -67,7 +68,7 @@ class AppListBoxItem(Gtk.ListBoxRow):
             self.set_opacity(0.5)
 
     def load_icon(self, from_network: bool = False):
-        image = providers[self._app.provider].get_icon(self._app, load_from_network=from_network)
+        image = providers[self._app.provider].get_icon(self._app, load_from_network=False)
         image.set_pixel_size(45)
         self.image_container.append(image)
 

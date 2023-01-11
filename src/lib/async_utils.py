@@ -1,5 +1,9 @@
 import threading
 
+import gi
+
+from gi.repository import GLib, GObject
+
 # Thank you to https://github.com/linuxmint/webapp-manager
 # check out common.py for the idea
 
@@ -14,6 +18,6 @@ def _async(func):
 
 # Used as a decorator to run things in the main loop, from another thread
 def idle(func):
-    def wrapper(*args):
-        GObject.idle_add(func, *args)
+    def wrapper(*args, **kwargs):
+        GLib.idle_add(func, *args)
     return wrapper

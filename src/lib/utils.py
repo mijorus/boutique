@@ -9,7 +9,7 @@ import hashlib
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio, Adw, Gdk, GLib  # noqa
+from gi.repository import Gtk, Gio, Adw, Gdk, GLib, GdkPixbuf  # noqa
 
 
 def key_in_dict(_dict: dict, key_lookup: str, separator='.'):
