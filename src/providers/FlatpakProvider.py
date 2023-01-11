@@ -105,13 +105,9 @@ class FlatpakProvider(Provider):
         local_file_path = None
 
         if 'origin' in list_element.extra_data and 'arch' in list_element.extra_data:
-            try:
-                repo = list_element.extra_data['origin']
-                aarch = list_element.extra_data['arch']
-                local_file_path = f'{GLib.get_home_dir()}/.local/share/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
-
-            except Exception as e:
-                log(e)
+            repo = list_element.extra_data['origin']
+            aarch = list_element.extra_data['arch']
+            local_file_path = f'{GLib.get_user_data_dir()}/flatpak/appstream/{repo}/{aarch}/active/icons/128x128/{list_element.id}.png'
 
         if local_file_path and GLib.file_test(local_file_path, GLib.FileTest.EXISTS):
             image = Gtk.Image.new_from_file(local_file_path)
@@ -121,7 +117,10 @@ class FlatpakProvider(Provider):
             remotes = flatpak.remotes_list()
 
             if load_from_network:
-                pref_remote = 'flathub' if ('flathub' in list_element.extra_data['remotes']) else list_element.extra_data['remotes'][0]
+                pref_remote = list_element.extra_data['remotes'][0]
+                if ('flathub' in list_element.extra_data['remotes']):
+                    pref_remote = 'flathub'
+
                 pref_remote_data = key_in_dict(remotes, pref_remote)
 
                 if pref_remote_data and ('url' in pref_remote_data):
@@ -612,11 +611,11 @@ class FlatpakProvider(Provider):
             body='',
             extra_child=extra_content
         )
-        
+
         self.load_file_dialog_information(extra_content, spinner)
         self.open_file_options_dialog.set_transient_for(parent)
         return self.open_file_options_dialog
-    
+
     @_async
     def load_file_dialog_information(self, target_widget: Gtk.Widget, placeholder_widget: Gtk.Widget):
         def update_modal_content():
@@ -625,7 +624,7 @@ class FlatpakProvider(Provider):
                 if 'IsRuntime=false' in content:
                     app_name: str = self.modal_gfile.get_parse_name().split('/')[-1]
                     modal_text = f"<b>You are opening the following Flatpak: </b>\n\n📦️ {app_name}"
-                    
+
                     for line in content.split('\n'):
                         if line.startswith('Url='):
                             modal_text += f'\n\nFrom the following repository:\n\n<b>🌐 {line.replace("Url=", "")}</b>'
@@ -640,7 +639,7 @@ class FlatpakProvider(Provider):
 
             self.open_file_options_dialog.connect('response', self.on_file_dialog_option_selected)
             target_widget.remove(placeholder_widget)
-            
+
         GLib.idle_add(update_modal_content)
 
     def on_file_dialog_option_selected(self):

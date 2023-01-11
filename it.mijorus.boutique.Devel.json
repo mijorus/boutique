@@ -11,17 +11,15 @@
         "--socket=fallback-x11",
         "--device=dri",
 
-        "--system-talk-name=org.freedesktop.PolicyKit",
-        "--filesystem=/var/lib/flatpak:ro",
-
         "--filesystem=xdg-data/applications:rw",
         "--filesystem=xdg-data/icons:rw",
-        "--filesystem=xdg-data/flatpak:rw",
+        "--filesystem=xdg-data/flatpak:ro",
         "--filesystem=/var/lib/flatpak:ro",
         "--filesystem=home:rw",
 
         "--talk-name=org.freedesktop.FileManager1",
         "--talk-name=org.freedesktop.Flatpak",
+
         "--filesystem=/tmp:rw"
     ],
     "cleanup" : [
