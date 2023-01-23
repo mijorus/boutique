@@ -18,6 +18,13 @@ A work-in-progress Flatpak and Appimages app manager.
 
 Made with GTK4
 
+## Credits
+
+Icon by daudix-ufo
+https://daudix-ufo.github.io/works/icons/
+
+Thanks!
+
 ## Testing
 
 (please keep in mind this is alpha software)
