@@ -75,6 +75,7 @@ class AppImageProvider(Provider):
                                 description=entry.getComment(),
                                 icon=entry.getIcon(),
                                 app_id='',
+                                version=entry.get('X-AppImage-Version'),
                                 installed_status=InstalledStatus.INSTALLED,
                                 file_path=entry.getExec(),
                                 provider=self.name,
@@ -249,18 +250,17 @@ class AppImageProvider(Provider):
                         list_element.installed_status = InstalledStatus.INSTALLED
             else:
                 logging.info('errore')
-                raise 'Extraction folder does not exists'
+                raise Exception('Extraction folder does not exists')
 
         except Exception as e:
             logging.error('Appimage installation error: ' + e)
 
-            try:
-                self.post_file_extraction_cleanup(extracted_appimage)
-            except Exception as g:
-                pass
+        try:
+            self.post_file_extraction_cleanup(extracted_appimage)
+        except Exception as g:
+            pass
 
-            list_element.installed_status = InstalledStatus.ERROR
-            raise e
+        list_element.installed_status = InstalledStatus.ERROR
 
         terminal.sh(['update-desktop-database'])
         callback(list_element.installed_status == InstalledStatus.INSTALLED)
@@ -342,9 +342,9 @@ class AppImageProvider(Provider):
         pass
 
     def post_file_extraction_cleanup(self, extraction: ExtractedAppImage):
+        print(extraction.container_folder.get_path())
         if extraction.container_folder.query_exists():
-            if extraction.container_folder.get_path().startswith(GLib.get_tmp_dir()):
-                shutil.rmtree(extraction.container_folder.get_path())
+            shutil.rmtree(extraction.container_folder.get_path())
 
     def extract_appimage(self, file_path: str) -> ExtractedAppImage:
         file = Gio.File.new_for_path(file_path)

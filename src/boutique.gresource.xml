@@ -2,7 +2,6 @@
 <gresources>
     <gresource prefix="/it/mijorus/boutique">
         <file>window.ui</file>
-        <file>gtk/help-overlay.ui</file>
         <file>gtk/main-menu.xml</file>
         <file>assets/flathub-badge-logo.svg</file>
         <file>assets/App-image-logo-bw.svg</file>

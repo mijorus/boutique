@@ -16,7 +16,7 @@ class InstalledStatus(Enum):
 class AppListElement():
     def __init__(self, name: str, description: str, app_id: str, provider: str, installed_status: InstalledStatus, size: float=None, alt_sources: Optional[other: AppListElement]=None, **kwargs):
         self.name: str = name
-        self.description: str = description
+        self.description: str = description if description.strip() else 'No description provided'
         self.id = app_id
         self.provider: str = provider
         self.installed_status: InstalledStatus = installed_status

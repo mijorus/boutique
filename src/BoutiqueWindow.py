@@ -20,6 +20,7 @@ from .BrowseApps import BrowseApps
 from .UpdatesList import UpdatesList
 from .AppDetails import AppDetails
 from .models.AppListElement import AppListElement
+from .State import state
 from .lib import flatpak, utils
 
 from gi.repository import Gtk, Adw, Gio

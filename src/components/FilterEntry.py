@@ -4,10 +4,10 @@ from typing import Dict, List
 
 class FilterEntry(Gtk.SearchEntry):
     __gsignals__ = {
-      "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
+        "selected-app": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object, )),
     }
 
-    def __init__(self, label, capture: Gtk.Widget=None, **kwargs):
+    def __init__(self, label, capture: Gtk.Widget = None, **kwargs):
         super().__init__(**kwargs)
 
         self.props.placeholder_text = label
