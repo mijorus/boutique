@@ -1,5 +1,8 @@
 # Boutique
 
+This project is no longer in development 😢, sorry for that...
+
+___
 
 <p align="center">
   <img width="150" src="data/icons/hicolor/scalable/apps/it.mijorus.boutique.svg">
